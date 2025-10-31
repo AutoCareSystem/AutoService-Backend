@@ -1,0 +1,12 @@
+{
+  "Version": 1,
+  "Hash": "Zukj7hl0M3IQEHfQEytDsJJqEPu+VyQ1EPT4BhRXQ1s=",
+  "Source": "Service_Management_Service",
+  "BasePath": "_content/Service_Management_Service",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": [],
+  "Endpoints": []
+}
