@@ -1,0 +1,6 @@
+@TimeLogging_Service_HostAddress = http://localhost:5225
+
+GET {{TimeLogging_Service_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
