@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Service_Management_Service.Data;
@@ -11,9 +12,11 @@ using Service_Management_Service.Data;
 namespace Service_Management_Service.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251101110806_MakeEndDateNullable")]
+    partial class MakeEndDateNullable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -49,9 +52,6 @@ namespace Service_Management_Service.Migrations
                     b.Property<string>("ServiceOption")
                         .HasColumnType("text");
 
-                    b.Property<int?>("ServicePackageID")
-                        .HasColumnType("integer");
-
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("timestamp with time zone");
 
@@ -62,17 +62,12 @@ namespace Service_Management_Service.Migrations
                     b.Property<TimeSpan>("Time")
                         .HasColumnType("interval");
 
-                    b.Property<decimal?>("TotalPrice")
-                        .HasColumnType("numeric");
-
                     b.Property<int>("VehicleID")
                         .HasColumnType("integer");
 
                     b.HasKey("AppointmentID");
 
                     b.HasIndex("CustomerID");
-
-                    b.HasIndex("ServicePackageID");
 
                     b.HasIndex("VehicleID");
 
@@ -321,10 +316,6 @@ namespace Service_Management_Service.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Service_Management_Service.Models.ServicePackage", "ServicePackage")
-                        .WithMany()
-                        .HasForeignKey("ServicePackageID");
-
                     b.HasOne("Service_Management_Service.Models.Vehicle", "Vehicle")
                         .WithMany()
                         .HasForeignKey("VehicleID")
@@ -332,8 +323,6 @@ namespace Service_Management_Service.Migrations
                         .IsRequired();
 
                     b.Navigation("Customer");
-
-                    b.Navigation("ServicePackage");
 
                     b.Navigation("Vehicle");
                 });
