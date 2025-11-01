@@ -7,7 +7,6 @@ public class Vehicle
     public int VehicleID { get; set; }
     public int CustomerID { get; set; }
     public Customer Customer { get; set; } = null!;
-
     public string Model { get; set; } = null!;
     public string Year { get; set; } = null!;
     public string Vin { get; set; } = null!;

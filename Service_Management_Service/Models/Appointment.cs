@@ -15,7 +15,7 @@ public class Appointment
 
     public DateTime StartDate { get; set; }
     public TimeSpan Time { get; set; }
-    public DateTime EndDate { get; set; }
+    public DateTime? EndDate { get; set; }
 
     public string Status { get; set; } = "Pending"; // Pending, Confirmed, Completed, Cancelled
 
@@ -28,6 +28,12 @@ public class Appointment
     // Project-specific fields
     public string? ProjectTitle { get; set; }
     public string? ProjectDescription { get; set; }
+
+    //service-package   
+    public int? ServicePackageID { get; set; }               
+    public ServicePackage? ServicePackage { get; set; }
+
+    public decimal? TotalPrice { get; set; }
 
     // Navigation
     public ICollection<AppointmentService> AppointmentServices { get; set; } = new List<AppointmentService>();
