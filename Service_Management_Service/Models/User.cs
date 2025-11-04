@@ -1,8 +1,9 @@
-// Models/User.cs
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Service_Management_Service.Models;
 
+[Table("Users")]
 public class User
 {
     [Key]
@@ -16,7 +17,4 @@ public class User
 
     [Required, MaxLength(20)]
     public string Phone { get; set; } = null!;
-
-    [Required, MaxLength(20)]
-    public string Role { get; set; } = null!; // "Customer", "Employee", "Admin"
 }

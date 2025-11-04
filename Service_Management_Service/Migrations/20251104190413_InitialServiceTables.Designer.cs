@@ -12,8 +12,8 @@ using Service_Management_Service.Data;
 namespace Service_Management_Service.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251101110806_MakeEndDateNullable")]
-    partial class MakeEndDateNullable
+    [Migration("20251104190413_InitialServiceTables")]
+    partial class InitialServiceTables
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -40,17 +40,11 @@ namespace Service_Management_Service.Migrations
                     b.Property<int>("CustomerID")
                         .HasColumnType("integer");
 
+                    b.Property<int?>("EmployeeID")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime?>("EndDate")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("ProjectDescription")
-                        .HasColumnType("text");
-
-                    b.Property<string>("ProjectTitle")
-                        .HasColumnType("text");
-
-                    b.Property<string>("ServiceOption")
-                        .HasColumnType("text");
 
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("timestamp with time zone");
@@ -62,12 +56,17 @@ namespace Service_Management_Service.Migrations
                     b.Property<TimeSpan>("Time")
                         .HasColumnType("interval");
 
+                    b.Property<decimal?>("TotalPrice")
+                        .HasColumnType("numeric");
+
                     b.Property<int>("VehicleID")
                         .HasColumnType("integer");
 
                     b.HasKey("AppointmentID");
 
                     b.HasIndex("CustomerID");
+
+                    b.HasIndex("EmployeeID");
 
                     b.HasIndex("VehicleID");
 
@@ -98,6 +97,64 @@ namespace Service_Management_Service.Migrations
                     b.HasIndex("ServiceID");
 
                     b.ToTable("AppointmentServices");
+                });
+
+            modelBuilder.Entity("Service_Management_Service.Models.Customer", b =>
+                {
+                    b.Property<int>("UserID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Address")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<int>("LoyaltyPoints")
+                        .HasColumnType("integer");
+
+                    b.HasKey("UserID");
+
+                    b.ToTable("Customers");
+                });
+
+            modelBuilder.Entity("Service_Management_Service.Models.Employee", b =>
+                {
+                    b.Property<int>("UserID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("EmpNo")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Position")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.HasKey("UserID");
+
+                    b.ToTable("Employees");
+                });
+
+            modelBuilder.Entity("Service_Management_Service.Models.ProjectAppointment", b =>
+                {
+                    b.Property<int>("AppointmentID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ProjectDescription")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ProjectTitle")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("AppointmentID");
+
+                    b.ToTable("ProjectAppointments");
                 });
 
             modelBuilder.Entity("Service_Management_Service.Models.Service", b =>
@@ -135,6 +192,25 @@ namespace Service_Management_Service.Migrations
                     b.HasKey("ServiceID");
 
                     b.ToTable("Services");
+                });
+
+            modelBuilder.Entity("Service_Management_Service.Models.ServiceAppointment", b =>
+                {
+                    b.Property<int>("AppointmentID")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ServiceOption")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int?>("ServicePackageID")
+                        .HasColumnType("integer");
+
+                    b.HasKey("AppointmentID");
+
+                    b.HasIndex("ServicePackageID");
+
+                    b.ToTable("ServiceAppointments");
                 });
 
             modelBuilder.Entity("Service_Management_Service.Models.ServicePackage", b =>
@@ -197,11 +273,6 @@ namespace Service_Management_Service.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("UserID"));
 
-                    b.Property<string>("Discriminator")
-                        .IsRequired()
-                        .HasMaxLength(8)
-                        .HasColumnType("character varying(8)");
-
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -217,18 +288,9 @@ namespace Service_Management_Service.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
 
-                    b.Property<string>("Role")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
-
                     b.HasKey("UserID");
 
                     b.ToTable("Users");
-
-                    b.HasDiscriminator().HasValue("User");
-
-                    b.UseTphMappingStrategy();
                 });
 
             modelBuilder.Entity("Service_Management_Service.Models.Vehicle", b =>
@@ -268,53 +330,17 @@ namespace Service_Management_Service.Migrations
                     b.ToTable("Vehicles");
                 });
 
-            modelBuilder.Entity("Service_Management_Service.Models.Customer", b =>
-                {
-                    b.HasBaseType("Service_Management_Service.Models.User");
-
-                    b.Property<string>("Address")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<int>("CustomerID")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("LoyaltyPoints")
-                        .HasColumnType("integer");
-
-                    b.HasDiscriminator().HasValue("Customer");
-                });
-
-            modelBuilder.Entity("Service_Management_Service.Models.Employee", b =>
-                {
-                    b.HasBaseType("Service_Management_Service.Models.User");
-
-                    b.Property<int>("EmpID")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("EmpNo")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Position")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.HasDiscriminator().HasValue("Employee");
-                });
-
             modelBuilder.Entity("Service_Management_Service.Models.Appointment", b =>
                 {
                     b.HasOne("Service_Management_Service.Models.Customer", "Customer")
-                        .WithMany()
+                        .WithMany("Appointments")
                         .HasForeignKey("CustomerID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("Service_Management_Service.Models.Employee", "Employee")
+                        .WithMany("AssignedAppointments")
+                        .HasForeignKey("EmployeeID");
 
                     b.HasOne("Service_Management_Service.Models.Vehicle", "Vehicle")
                         .WithMany()
@@ -323,6 +349,8 @@ namespace Service_Management_Service.Migrations
                         .IsRequired();
 
                     b.Navigation("Customer");
+
+                    b.Navigation("Employee");
 
                     b.Navigation("Vehicle");
                 });
@@ -344,6 +372,56 @@ namespace Service_Management_Service.Migrations
                     b.Navigation("Appointment");
 
                     b.Navigation("Service");
+                });
+
+            modelBuilder.Entity("Service_Management_Service.Models.Customer", b =>
+                {
+                    b.HasOne("Service_Management_Service.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Service_Management_Service.Models.Employee", b =>
+                {
+                    b.HasOne("Service_Management_Service.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Service_Management_Service.Models.ProjectAppointment", b =>
+                {
+                    b.HasOne("Service_Management_Service.Models.Appointment", "Appointment")
+                        .WithOne("ProjectDetails")
+                        .HasForeignKey("Service_Management_Service.Models.ProjectAppointment", "AppointmentID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Appointment");
+                });
+
+            modelBuilder.Entity("Service_Management_Service.Models.ServiceAppointment", b =>
+                {
+                    b.HasOne("Service_Management_Service.Models.Appointment", "Appointment")
+                        .WithOne("ServiceDetails")
+                        .HasForeignKey("Service_Management_Service.Models.ServiceAppointment", "AppointmentID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Service_Management_Service.Models.ServicePackage", "ServicePackage")
+                        .WithMany()
+                        .HasForeignKey("ServicePackageID");
+
+                    b.Navigation("Appointment");
+
+                    b.Navigation("ServicePackage");
                 });
 
             modelBuilder.Entity("Service_Management_Service.Models.ServicePackageItem", b =>
@@ -368,7 +446,7 @@ namespace Service_Management_Service.Migrations
             modelBuilder.Entity("Service_Management_Service.Models.Vehicle", b =>
                 {
                     b.HasOne("Service_Management_Service.Models.Customer", "Customer")
-                        .WithMany()
+                        .WithMany("Vehicles")
                         .HasForeignKey("CustomerID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -379,6 +457,22 @@ namespace Service_Management_Service.Migrations
             modelBuilder.Entity("Service_Management_Service.Models.Appointment", b =>
                 {
                     b.Navigation("AppointmentServices");
+
+                    b.Navigation("ProjectDetails");
+
+                    b.Navigation("ServiceDetails");
+                });
+
+            modelBuilder.Entity("Service_Management_Service.Models.Customer", b =>
+                {
+                    b.Navigation("Appointments");
+
+                    b.Navigation("Vehicles");
+                });
+
+            modelBuilder.Entity("Service_Management_Service.Models.Employee", b =>
+                {
+                    b.Navigation("AssignedAppointments");
                 });
 
             modelBuilder.Entity("Service_Management_Service.Models.ServicePackage", b =>

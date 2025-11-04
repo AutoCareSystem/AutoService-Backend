@@ -15,5 +15,6 @@ namespace Service_Management_Service.DTOs
         // Project-specific
         public string? ProjectTitle { get; set; }
         public string? ProjectDescription { get; set; }
+        public int? EmployeeID { get; set; }
     }
 }

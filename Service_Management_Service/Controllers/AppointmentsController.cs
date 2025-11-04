@@ -21,29 +21,42 @@ public class AppointmentsController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<Appointment>> CreateAppointment(CreateAppointmentDto dto)
     {
-        // Validate AppointmentType
+        // === 1. Validate AppointmentType ===
         if (!new[] { "Service", "Project" }.Contains(dto.AppointmentType))
             return BadRequest("AppointmentType must be 'Service' or 'Project'.");
 
-        // Validate Customer
-        var customer = await _context.Customers.FindAsync(dto.CustomerID);
+        // === 2. Validate Customer ===
+        var customer = await _context.Customers
+            .Include(c => c.User)
+            .FirstOrDefaultAsync(c => c.UserID == dto.CustomerID);
         if (customer == null)
             return NotFound($"Customer with ID {dto.CustomerID} not found.");
 
-        // Validate Vehicle
+        // === 3. Validate Vehicle ===
         var vehicle = await _context.Vehicles
             .FirstOrDefaultAsync(v => v.VehicleID == dto.VehicleID && v.CustomerID == dto.CustomerID);
         if (vehicle == null)
             return BadRequest("Vehicle not found or does not belong to the customer.");
 
-        // Validate EndDate
-        if (dto.EndDate != null && dto.EndDate <= dto.StartDate.Date.Add(dto.Time))
+        // === 4. Validate Employee (if assigned) ===
+        if (dto.EmployeeID.HasValue)
+        {
+            var employee = await _context.Employees
+                .FirstOrDefaultAsync(e => e.UserID == dto.EmployeeID && e.IsActive);
+            if (employee == null)
+                return BadRequest("Assigned employee not found or inactive.");
+        }
+
+        // === 5. Validate EndDate ===
+        if (dto.EndDate.HasValue && dto.EndDate.Value <= dto.StartDate.Date.Add(dto.Time))
             return BadRequest("EndDate must be after StartDate + Time.");
 
+        // === 6. Create Base Appointment ===
         var appointment = new Appointment
         {
             CustomerID = dto.CustomerID,
             VehicleID = dto.VehicleID,
+            EmployeeID = dto.EmployeeID,
             StartDate = dto.StartDate.Date,
             Time = dto.Time,
             EndDate = dto.EndDate,
@@ -60,9 +73,13 @@ public class AppointmentsController : ControllerBase
             if (!new[] { "Full", "Half", "Custom" }.Contains(dto.ServiceOption))
                 return BadRequest("ServiceOption must be 'Full', 'Half', or 'Custom'.");
 
-            appointment.ServiceOption = dto.ServiceOption;
+            // Create ServiceAppointment (always)
+            appointment.ServiceDetails = new ServiceAppointment
+            {
+                ServiceOption = dto.ServiceOption
+            };
 
-            // UPDATED: Full / Half — only store ServicePackageID, NO copying to AppointmentServices
+            // --- Full / Half: Use ServicePackage ---
             if (dto.ServiceOption is "Full" or "Half")
             {
                 if (!dto.ServicePackageID.HasValue)
@@ -71,20 +88,21 @@ public class AppointmentsController : ControllerBase
                 var package = await _context.ServicePackages
                     .Include(p => p.Items)
                         .ThenInclude(i => i.Service)
-                    .FirstOrDefaultAsync(p => p.ServicePackageID == dto.ServicePackageID
-                                           && p.PackageType == dto.ServiceOption);
+                    .FirstOrDefaultAsync(p =>
+                        p.ServicePackageID == dto.ServicePackageID.Value &&
+                        p.PackageType == dto.ServiceOption);
 
                 if (package == null)
                     return NotFound($"No {dto.ServiceOption} package found with ID {dto.ServicePackageID}.");
 
-                appointment.ServicePackageID = package.ServicePackageID;
-                appointment.TotalPrice = package.Price; // or sum of item prices
+                appointment.ServiceDetails.ServicePackageID = package.ServicePackageID;
+                appointment.TotalPrice = package.Price;
             }
-            // Custom — still use AppointmentServices
+            // --- Custom: Use AppointmentServices ---
             else if (dto.ServiceOption == "Custom")
             {
                 if (dto.CustomServiceIDs == null || !dto.CustomServiceIDs.Any())
-                    return BadRequest("CustomServiceIDs are required for Custom service appointments.");
+                    return BadRequest("CustomServiceIDs are required for Custom appointments.");
 
                 var validServiceIds = await _context.Services
                     .Where(s => dto.CustomServiceIDs.Contains(s.ServiceID) && s.Status == "Active")
@@ -97,16 +115,18 @@ public class AppointmentsController : ControllerBase
                 foreach (var serviceId in dto.CustomServiceIDs)
                 {
                     var service = await _context.Services.FindAsync(serviceId);
-                    appointment.AppointmentServices.Add(new AppointmentService
+                    if (service != null)
                     {
-                        ServiceID = serviceId,
-                        CustomPrice = service?.Price
-                    });
+                        appointment.AppointmentServices.Add(new AppointmentService
+                        {
+                            ServiceID = serviceId,
+                            CustomPrice = service.Price
+                        });
+                    }
                 }
 
-                // NEW: Calculate total for Custom
                 appointment.TotalPrice = appointment.AppointmentServices
-                    .Sum(aps => aps.CustomPrice ?? 0);
+                    .Sum(aps => aps.CustomPrice ?? 0m);
             }
         }
         // ==================== PROJECT LOGIC ====================
@@ -115,8 +135,11 @@ public class AppointmentsController : ControllerBase
             if (string.IsNullOrWhiteSpace(dto.ProjectTitle))
                 return BadRequest("ProjectTitle is required for Project appointments.");
 
-            appointment.ProjectTitle = dto.ProjectTitle;
-            appointment.ProjectDescription = dto.ProjectDescription;
+            appointment.ProjectDetails = new ProjectAppointment
+            {
+                ProjectTitle = dto.ProjectTitle,
+                ProjectDescription = dto.ProjectDescription
+            };
         }
 
         // ==================== SAVE ====================
@@ -125,16 +148,43 @@ public class AppointmentsController : ControllerBase
             _context.Appointments.Add(appointment);
             await _context.SaveChangesAsync();
 
-            // UPDATED: Load ServicePackage for Full/Half
+            // === Load Navigation Properties ===
             await _context.Entry(appointment)
                 .Reference(a => a.Customer)
+                .Query()
+                .Include(c => c.User)
                 .LoadAsync();
+
             await _context.Entry(appointment)
                 .Reference(a => a.Vehicle)
                 .LoadAsync();
-            await _context.Entry(appointment)
-                .Reference(a => a.ServicePackage)
-                .LoadAsync();
+
+            if (appointment.EmployeeID.HasValue)
+            {
+                await _context.Entry(appointment)
+                    .Reference(a => a.Employee)
+                    .Query()
+                    .Include(e => e.User)
+                    .LoadAsync();
+            }
+
+            if (appointment.ServiceDetails != null)
+            {
+                await _context.Entry(appointment.ServiceDetails)
+                    .Reference(s => s.ServicePackage)
+                    .Query()
+                    .Include(p => p.Items)
+                    .ThenInclude(i => i.Service)
+                    .LoadAsync();
+            }
+
+            if (appointment.ProjectDetails != null)
+            {
+                await _context.Entry(appointment)
+                    .Reference(a => a.ProjectDetails)
+                    .LoadAsync();
+            }
+
             await _context.Entry(appointment)
                 .Collection(a => a.AppointmentServices)
                 .Query()
@@ -149,16 +199,21 @@ public class AppointmentsController : ControllerBase
         }
     }
 
-    // UPDATED: Include ServicePackage in GET
+    // ==================== GET SINGLE ====================
     [HttpGet("{id}")]
     public async Task<ActionResult<Appointment>> GetAppointment(int id)
     {
         var appointment = await _context.Appointments
             .Include(a => a.Customer)
+                .ThenInclude(c => c.User)
             .Include(a => a.Vehicle)
-            .Include(a => a.ServicePackage)
+            .Include(a => a.Employee)
+                .ThenInclude(e => e.User)
+            .Include(a => a.ServiceDetails)
+                .ThenInclude(s => s.ServicePackage)
                 .ThenInclude(p => p.Items)
                 .ThenInclude(i => i.Service)
+            .Include(a => a.ProjectDetails)
             .Include(a => a.AppointmentServices)
                 .ThenInclude(aps => aps.Service)
             .FirstOrDefaultAsync(a => a.AppointmentID == id);
@@ -166,6 +221,6 @@ public class AppointmentsController : ControllerBase
         if (appointment == null)
             return NotFound();
 
-        return appointment;
+        return Ok(appointment);
     }
 }
