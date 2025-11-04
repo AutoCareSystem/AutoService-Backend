@@ -38,15 +38,6 @@ public class AppointmentsController : ControllerBase
         if (vehicle == null)
             return BadRequest("Vehicle not found or does not belong to the customer.");
 
-        // === 4. Validate Employee (if assigned) ===
-        if (dto.EmployeeID.HasValue)
-        {
-            var employee = await _context.Employees
-                .FirstOrDefaultAsync(e => e.UserID == dto.EmployeeID && e.IsActive);
-            if (employee == null)
-                return BadRequest("Assigned employee not found or inactive.");
-        }
-
         // === 5. Validate EndDate ===
         if (dto.EndDate.HasValue && dto.EndDate.Value <= dto.StartDate.Date.Add(dto.Time))
             return BadRequest("EndDate must be after StartDate + Time.");
