@@ -405,6 +405,85 @@ public class AppointmentsController : ControllerBase
         }
     }
 
+    // GET: api/appointments/service?option=Full&status=Approved
+    [HttpGet("service")]
+    public async Task<ActionResult<IEnumerable<ServiceAppointmentDetailsDto>>> GetServiceAppointments(
+        [FromQuery] string? option = null,   // "Full", "Half", "Custom", or null (all)
+        [FromQuery] string? status = null)
+    {
+        var validOptions = new[] { "Full", "Half", "Custom" };
+
+        if (option != null && !validOptions.Contains(option, StringComparer.OrdinalIgnoreCase))
+            return BadRequest("Invalid option. Use: Full, Half, Custom, or leave empty for all.");
+
+        var query = _context.Appointments
+            .Where(a => a.AppointmentType == "Service");
+
+        // === FILTER BY OPTION ===
+        if (!string.IsNullOrEmpty(option))
+        {
+            var opt = option.Trim();
+            query = query.Where(a =>
+                a.ServiceDetails != null &&
+                a.ServiceDetails.ServiceOption == opt);
+        }
+
+        // === FILTER BY STATUS ===
+        if (!string.IsNullOrEmpty(status))
+        {
+            query = query.Where(a => a.Status == status);
+        }
+
+        var appointments = await query
+            .Include(a => a.Customer).ThenInclude(c => c.User)
+            .Include(a => a.Vehicle)
+            .Include(a => a.Employee).ThenInclude(e => e.User)
+            .Include(a => a.ServiceDetails)
+                .ThenInclude(sd => sd!.ServicePackage)
+                .ThenInclude(p => p!.Items)
+                .ThenInclude(i => i.Service)
+            .Include(a => a.AppointmentServices)
+                .ThenInclude(aps => aps.Service)
+            .OrderByDescending(a => a.StartDate)
+            .ThenBy(a => a.Time)
+            .ToListAsync();
+
+        var result = appointments.Select(a => new ServiceAppointmentDetailsDto
+        {
+            AppointmentID = a.AppointmentID,
+            CustomerName = a.Customer.User.Name,
+            CustomerEmail = a.Customer.User.Email,
+            VehicleInfo = $"{a.Vehicle.Company} {a.Vehicle.Model} ({a.Vehicle.Year}) - {a.Vehicle.PlateNumber}",
+            StartDate = a.StartDate,
+            Time = a.Time,
+            Status = a.Status,
+            EmployeeName = a.Employee?.User.Name ?? "Not Assigned",
+            ServiceOption = a.ServiceDetails?.ServiceOption ?? "Unknown",
+            TotalPrice = a.TotalPrice ?? 0m,
+
+            // FULL / HALF PACKAGE
+            PackageName = a.ServiceDetails?.ServicePackage?.Name,
+            PackageType = a.ServiceDetails?.ServicePackage?.PackageType,
+            PackageServices = a.ServiceDetails?.ServicePackage?.Items
+                .Select(i => new ServiceItemDto
+                {
+                    Title = i.Service.Title,
+                    Price = i.Service.Price
+                })
+                .ToList() ?? new List<ServiceItemDto>(),
+
+            // CUSTOM SERVICES
+            CustomServices = a.AppointmentServices
+                .Select(aps => new ServiceItemDto
+                {
+                    Title = aps.Service.Title,
+                    Price = aps.CustomPrice ?? aps.Service.Price
+                })
+                .ToList()
+        }).ToList();
+
+        return Ok(result);
+    }
 
     private int CountServicesInAppointment(Appointment appt)
     {
