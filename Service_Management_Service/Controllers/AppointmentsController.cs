@@ -214,4 +214,59 @@ public class AppointmentsController : ControllerBase
 
         return Ok(appointment);
     }
+
+    // GET: api/appointments?status=Pending&type=Service&employeeId=42
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<Appointment>>> GetAppointments(
+        [FromQuery] string? status,
+        [FromQuery] string? type,
+        [FromQuery] int? employeeId)
+    {
+        var query = _context.Appointments
+            .Include(a => a.Customer).ThenInclude(c => c.User)
+            .Include(a => a.Vehicle)
+            .Include(a => a.Employee).ThenInclude(e => e.User)
+            .Include(a => a.ServiceDetails)
+                .ThenInclude(s => s.ServicePackage)
+                .ThenInclude(p => p.Items)
+                .ThenInclude(i => i.Service)
+            .Include(a => a.ProjectDetails)
+            .Include(a => a.AppointmentServices)
+                .ThenInclude(aps => aps.Service)
+            .AsQueryable();
+
+        // === FILTER: Status (case-insensitive) ===
+        if (!string.IsNullOrWhiteSpace(status))
+        {
+            var statusNorm = status.Trim().ToLower();
+            query = query.Where(a => a.Status != null && a.Status.ToLower() == statusNorm);
+        }
+
+        // === FILTER: AppointmentType ===
+        if (!string.IsNullOrWhiteSpace(type))
+        {
+            var typeNorm = type.Trim().ToLower();
+            if (!new[] { "Service", "Project" }.Contains(typeNorm, StringComparer.OrdinalIgnoreCase))
+                return BadRequest("Invalid type. Must be 'Service' or 'Project'.");
+
+            query = query.Where(a => a.AppointmentType.ToLower() == typeNorm);
+        }
+
+        // === FILTER: EmployeeID (only assigned) ===
+        if (employeeId.HasValue)
+        {
+            query = query.Where(a => a.EmployeeID == employeeId.Value);
+        }
+
+        // === ORDERING ===
+        query = query
+            .OrderBy(a => a.StartDate)
+            .ThenBy(a => a.Time);
+
+        // === EXECUTE ===
+        var appointments = await query.ToListAsync();
+
+        return Ok(appointments);
+    }
+
 }

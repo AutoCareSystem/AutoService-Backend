@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Service_Management_Service.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialServiceTables : Migration
+    public partial class InitialServiceTabless : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

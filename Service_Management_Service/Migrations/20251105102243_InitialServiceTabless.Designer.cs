@@ -12,8 +12,8 @@ using Service_Management_Service.Data;
 namespace Service_Management_Service.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251104190413_InitialServiceTables")]
-    partial class InitialServiceTables
+    [Migration("20251105102243_InitialServiceTabless")]
+    partial class InitialServiceTabless
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
