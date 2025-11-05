@@ -11,8 +11,6 @@ var builder = WebApplication.CreateBuilder(args);
 // -----------------------
 // Load .env (for local development)
 DotNetEnv.Env.Load();
-
-// Add environment variables to configuration
 builder.Configuration.AddEnvironmentVariables();
 
 // -----------------------
@@ -22,10 +20,7 @@ var jwtKey = builder.Configuration["Jwt:Key"];
 var jwtIssuer = builder.Configuration["Jwt:Issuer"];
 var jwtAudience = builder.Configuration["Jwt:Audience"];
 
-
-
 Console.WriteLine($"JWT_KEY length: {Environment.GetEnvironmentVariable("JWT_KEY")?.Length}");
-
 
 // -----------------------
 // Null checks
@@ -48,10 +43,7 @@ builder.Services.AddIdentity<AppUser, Microsoft.AspNetCore.Identity.IdentityRole
 
 // -----------------------
 // Configure JWT Authentication
-var keyBytes = Encoding.UTF8.GetBytes(jwtKey);// decode Base64 to bytes
-var key = new SymmetricSecurityKey(keyBytes);
-var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
+var keyBytes = Encoding.UTF8.GetBytes(jwtKey);
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -68,22 +60,32 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 // -----------------------
-// Authorization
+// Authorization, Controllers, CORS
 builder.Services.AddAuthorization();
-
-// -----------------------
-// Controllers & CORS
 builder.Services.AddControllers();
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowReact",
-        policy => policy
-            .WithOrigins("http://localhost:5173")
-            .AllowAnyMethod()
-            .AllowAnyHeader());
+    options.AddPolicy("AllowReact", policy =>
+        policy.WithOrigins("http://localhost:5173")
+              .AllowAnyMethod()
+              .AllowAnyHeader());
 });
 
+// -----------------------
+// Swagger (must be after builder)
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
 var app = builder.Build();
+
+// -----------------------
+// Swagger UI visible everywhere (including Docker)
+app.UseSwagger();
+app.UseSwaggerUI(c =>
+{
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Auth API V1");
+    c.RoutePrefix = string.Empty; // open at root "/"
+});
 
 // -----------------------
 // Test database connection
