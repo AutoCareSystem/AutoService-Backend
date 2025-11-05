@@ -107,3 +107,47 @@ public class UpdateVehicleDto
     [MaxLength(100)]
     public string? Company { get; set; }
 }
+
+// ============== EMPLOYEE PROFILE DTOs ==============
+
+// Employee Profile Response DTO
+public class EmployeeProfileDto
+{
+    public int EmployeeID { get; set; }
+    public int UserID { get; set; }
+    public string Name { get; set; } = null!;
+    public string Email { get; set; } = null!;
+    public string Phone { get; set; } = null!;
+    public string Position { get; set; } = null!;
+    public decimal HourlyRate { get; set; }
+    public int TotalAppointments { get; set; }
+    public int CompletedAppointments { get; set; }
+    public List<EmployeeAppointmentDto> RecentAppointments { get; set; } = new();
+}
+
+// Employee Appointment DTO
+public class EmployeeAppointmentDto
+{
+    public int AppointmentID { get; set; }
+    public string CustomerName { get; set; } = null!;
+    public string AppointmentType { get; set; } = null!; // Service or Project
+    public string ServiceTitle { get; set; } = null!;
+    public DateTime Date { get; set; }
+    public string Time { get; set; } = null!;
+    public string Status { get; set; } = null!;
+    public string? VehicleInfo { get; set; }
+}
+
+// Update Employee Profile DTO
+public class UpdateEmployeeProfileDto
+{
+    [MaxLength(100)]
+    public string? Name { get; set; }
+
+    [Phone]
+    [MaxLength(20)]
+    public string? Phone { get; set; }
+
+    [MaxLength(100)]
+    public string? Position { get; set; }
+}

@@ -276,6 +276,120 @@ public class ProfileController : ControllerBase
 
         return Ok(customers);
     }
+
+    // GET: api/Profile/employee/{userId}
+    [HttpGet("employee/{userId}")]
+    public async Task<ActionResult<EmployeeProfileDto>> GetEmployeeProfile(int userId)
+    {
+        var employee = await _db.Employees
+            .Include(e => e.User)
+            .Include(e => e.Appointments)
+                .ThenInclude(a => a.Customer)
+                    .ThenInclude(c => c.User)
+            .Include(e => e.Appointments)
+                .ThenInclude(a => a.ServiceDetails)
+            .Include(e => e.Appointments)
+                .ThenInclude(a => a.ProjectDetails)
+            .Include(e => e.Appointments)
+                .ThenInclude(a => a.Customer)
+                    .ThenInclude(c => c.Vehicles)
+            .FirstOrDefaultAsync(e => e.UserID == userId);
+
+        if (employee == null)
+            return NotFound($"Employee with UserID {userId} not found");
+
+        // Calculate statistics
+        var totalAppointments = employee.Appointments.Count;
+        var completedAppointments = employee.Appointments.Count(a => a.Status == "Completed");
+
+        // Get recent appointments (last 10)
+        var recentAppointments = employee.Appointments
+            .OrderByDescending(a => a.StartDate)
+            .Take(10)
+            .Select(a => new EmployeeAppointmentDto
+            {
+                AppointmentID = a.AppointmentID,
+                CustomerName = a.Customer.User.Name,
+                AppointmentType = a.AppointmentType,
+                ServiceTitle = a.AppointmentType == "Service"
+                    ? (a.ServiceDetails?.ServiceOption ?? "Service Appointment")
+                    : (a.ProjectDetails?.ProjectTitle ?? "Project Appointment"),
+                Date = a.StartDate,
+                Time = a.Time.ToString(@"hh\:mm"),
+                Status = a.Status,
+                VehicleInfo = a.Customer.Vehicles.FirstOrDefault() != null
+                    ? $"{a.Customer.Vehicles.First().Company} {a.Customer.Vehicles.First().Model} ({a.Customer.Vehicles.First().PlateNumber})"
+                    : null
+            })
+            .ToList();
+
+        var profile = new EmployeeProfileDto
+        {
+            EmployeeID = employee.UserID,
+            UserID = employee.UserID,
+            Name = employee.User.Name,
+            Email = employee.User.Email,
+            Phone = employee.User.Phone,
+            Position = employee.Position,
+            HourlyRate = employee.HourlyRate,
+            TotalAppointments = totalAppointments,
+            CompletedAppointments = completedAppointments,
+            RecentAppointments = recentAppointments
+        };
+
+        return Ok(profile);
+    }
+
+    // PUT: api/Profile/employee/{userId}
+    [HttpPut("employee/{userId}")]
+    public async Task<IActionResult> UpdateEmployeeProfile(int userId, [FromBody] UpdateEmployeeProfileDto dto)
+    {
+        var employee = await _db.Employees
+            .Include(e => e.User)
+            .FirstOrDefaultAsync(e => e.UserID == userId);
+
+        if (employee == null)
+            return NotFound($"Employee with UserID {userId} not found");
+
+        // Update User fields
+        if (!string.IsNullOrWhiteSpace(dto.Name))
+            employee.User.Name = dto.Name;
+
+        if (!string.IsNullOrWhiteSpace(dto.Phone))
+            employee.User.Phone = dto.Phone;
+
+        // Update Employee-specific fields
+        if (!string.IsNullOrWhiteSpace(dto.Position))
+            employee.Position = dto.Position;
+
+        await _db.SaveChangesAsync();
+
+        return Ok(new { message = "Employee profile updated successfully" });
+    }
+
+    // GET: api/Profile/employees (Admin only - get all employees)
+    [HttpGet("employees")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<List<object>>> GetAllEmployees()
+    {
+        var employees = await _db.Employees
+            .Include(e => e.User)
+            .Include(e => e.Appointments)
+            .Select(e => new
+            {
+                EmployeeID = e.UserID,
+                Name = e.User.Name,
+                Email = e.User.Email,
+                Phone = e.User.Phone,
+                Position = e.Position,
+                HourlyRate = e.HourlyRate,
+                TotalAppointments = e.Appointments.Count,
+                CompletedAppointments = e.Appointments.Count(a => a.Status == "Completed")
+            })
+            .ToListAsync();
+
+        return Ok(employees);
+    }
 }
 
 public record AddLoyaltyPointsDto(int Points);
