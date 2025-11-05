@@ -324,6 +324,87 @@ public class AppointmentsController : ControllerBase
         return Ok(result);
     }
 
+    // PUT: api/appointments/123/accept
+    [HttpPut("{id}/accept")]
+    public async Task<IActionResult> AcceptAppointment(int id, [FromBody] AcceptAppointmentDto dto)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var appointment = await _context.Appointments
+            .Include(a => a.Employee)
+            .FirstOrDefaultAsync(a => a.AppointmentID == id);
+
+        if (appointment == null)
+            return NotFound("Appointment not found.");
+
+        if (appointment.EmployeeID.HasValue)
+            return BadRequest("Appointment is already assigned.");
+
+        if (appointment.Status != "Pending")
+            return BadRequest("Only Pending appointments can be accepted.");
+
+        var employee = await _context.Employees
+            .FirstOrDefaultAsync(e => e.UserID == dto.EmployeeID && e.IsActive);
+
+        if (employee == null)
+            return BadRequest("Invalid or inactive employee.");
+
+        // === UPDATE ===
+        appointment.EmployeeID = dto.EmployeeID;
+        appointment.Status = "Approved";
+
+        try
+        {
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Appointment accepted.", status = "Approved" });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Error: {ex.Message}");
+        }
+    }
+
+    // PUT: api/appointments/123/complete
+    [HttpPut("{id}/complete")]
+    public async Task<IActionResult> CompleteAppointment(int id, [FromBody] CompleteAppointmentDto dto)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var appointment = await _context.Appointments
+            .Include(a => a.Employee)
+            .FirstOrDefaultAsync(a => a.AppointmentID == id);
+
+        if (appointment == null)
+            return NotFound("Appointment not found.");
+
+        if (!appointment.EmployeeID.HasValue)
+            return BadRequest("Appointment must be assigned to an employee.");
+
+        if (appointment.EmployeeID != dto.EmployeeID)
+            return Forbid("You can only complete your own appointments.");
+
+        if (appointment.Status == "Completed")
+            return BadRequest("Appointment is already completed.");
+
+        if (appointment.Status != "Approved")
+            return BadRequest("Only Approved appointments can be completed.");
+
+        // === UPDATE ===
+        appointment.Status = "Completed";
+
+        try
+        {
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Appointment completed.", status = "Completed" });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Error: {ex.Message}");
+        }
+    }
+
 
     private int CountServicesInAppointment(Appointment appt)
     {
