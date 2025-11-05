@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Service_Management_Service.Migrations
 {
     /// <inheritdoc />
-    public partial class AddAppointmentRelatedModels : Migration
+    public partial class InitialServiceTables : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -29,6 +29,24 @@ namespace Service_Management_Service.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Services",
+                columns: table => new
+                {
+                    ServiceID = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Code = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    Title = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    Description = table.Column<string>(type: "text", nullable: true),
+                    Duration = table.Column<int>(type: "integer", nullable: false),
+                    Price = table.Column<decimal>(type: "numeric", nullable: false),
+                    Status = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Services", x => x.ServiceID);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Users",
                 columns: table => new
                 {
@@ -36,16 +54,7 @@ namespace Service_Management_Service.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     Name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     Email = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    Phone = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
-                    Role = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
-                    Discriminator = table.Column<string>(type: "character varying(8)", maxLength: 8, nullable: false),
-                    CustomerID = table.Column<int>(type: "integer", nullable: true),
-                    LoyaltyPoints = table.Column<int>(type: "integer", nullable: true),
-                    Address = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
-                    EmpID = table.Column<int>(type: "integer", nullable: true),
-                    EmpNo = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
-                    Position = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
-                    IsActive = table.Column<bool>(type: "boolean", nullable: true)
+                    Phone = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -79,6 +88,45 @@ namespace Service_Management_Service.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Customers",
+                columns: table => new
+                {
+                    UserID = table.Column<int>(type: "integer", nullable: false),
+                    LoyaltyPoints = table.Column<int>(type: "integer", nullable: false),
+                    Address = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Customers", x => x.UserID);
+                    table.ForeignKey(
+                        name: "FK_Customers_Users_UserID",
+                        column: x => x.UserID,
+                        principalTable: "Users",
+                        principalColumn: "UserID",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Employees",
+                columns: table => new
+                {
+                    UserID = table.Column<int>(type: "integer", nullable: false),
+                    EmpNo = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    Position = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    IsActive = table.Column<bool>(type: "boolean", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Employees", x => x.UserID);
+                    table.ForeignKey(
+                        name: "FK_Employees_Users_UserID",
+                        column: x => x.UserID,
+                        principalTable: "Users",
+                        principalColumn: "UserID",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Vehicles",
                 columns: table => new
                 {
@@ -95,9 +143,9 @@ namespace Service_Management_Service.Migrations
                 {
                     table.PrimaryKey("PK_Vehicles", x => x.VehicleID);
                     table.ForeignKey(
-                        name: "FK_Vehicles_Users_CustomerID",
+                        name: "FK_Vehicles_Customers_CustomerID",
                         column: x => x.CustomerID,
-                        principalTable: "Users",
+                        principalTable: "Customers",
                         principalColumn: "UserID",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -110,24 +158,28 @@ namespace Service_Management_Service.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     CustomerID = table.Column<int>(type: "integer", nullable: false),
                     VehicleID = table.Column<int>(type: "integer", nullable: false),
+                    EmployeeID = table.Column<int>(type: "integer", nullable: true),
                     StartDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     Time = table.Column<TimeSpan>(type: "interval", nullable: false),
-                    EndDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    EndDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     Status = table.Column<string>(type: "text", nullable: false),
                     AppointmentType = table.Column<string>(type: "text", nullable: false),
-                    ServiceOption = table.Column<string>(type: "text", nullable: true),
-                    ProjectTitle = table.Column<string>(type: "text", nullable: true),
-                    ProjectDescription = table.Column<string>(type: "text", nullable: true)
+                    TotalPrice = table.Column<decimal>(type: "numeric", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Appointments", x => x.AppointmentID);
                     table.ForeignKey(
-                        name: "FK_Appointments_Users_CustomerID",
+                        name: "FK_Appointments_Customers_CustomerID",
                         column: x => x.CustomerID,
-                        principalTable: "Users",
+                        principalTable: "Customers",
                         principalColumn: "UserID",
                         onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Appointments_Employees_EmployeeID",
+                        column: x => x.EmployeeID,
+                        principalTable: "Employees",
+                        principalColumn: "UserID");
                     table.ForeignKey(
                         name: "FK_Appointments_Vehicles_VehicleID",
                         column: x => x.VehicleID,
@@ -163,10 +215,58 @@ namespace Service_Management_Service.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "ProjectAppointments",
+                columns: table => new
+                {
+                    AppointmentID = table.Column<int>(type: "integer", nullable: false),
+                    ProjectTitle = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    ProjectDescription = table.Column<string>(type: "text", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ProjectAppointments", x => x.AppointmentID);
+                    table.ForeignKey(
+                        name: "FK_ProjectAppointments_Appointments_AppointmentID",
+                        column: x => x.AppointmentID,
+                        principalTable: "Appointments",
+                        principalColumn: "AppointmentID",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ServiceAppointments",
+                columns: table => new
+                {
+                    AppointmentID = table.Column<int>(type: "integer", nullable: false),
+                    ServiceOption = table.Column<string>(type: "text", nullable: false),
+                    ServicePackageID = table.Column<int>(type: "integer", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ServiceAppointments", x => x.AppointmentID);
+                    table.ForeignKey(
+                        name: "FK_ServiceAppointments_Appointments_AppointmentID",
+                        column: x => x.AppointmentID,
+                        principalTable: "Appointments",
+                        principalColumn: "AppointmentID",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ServiceAppointments_ServicePackages_ServicePackageID",
+                        column: x => x.ServicePackageID,
+                        principalTable: "ServicePackages",
+                        principalColumn: "ServicePackageID");
+                });
+
             migrationBuilder.CreateIndex(
                 name: "IX_Appointments_CustomerID",
                 table: "Appointments",
                 column: "CustomerID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Appointments_EmployeeID",
+                table: "Appointments",
+                column: "EmployeeID");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Appointments_VehicleID",
@@ -182,6 +282,11 @@ namespace Service_Management_Service.Migrations
                 name: "IX_AppointmentServices_ServiceID",
                 table: "AppointmentServices",
                 column: "ServiceID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ServiceAppointments_ServicePackageID",
+                table: "ServiceAppointments",
+                column: "ServicePackageID");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ServicePackageItems_ServiceID",
@@ -206,6 +311,12 @@ namespace Service_Management_Service.Migrations
                 name: "AppointmentServices");
 
             migrationBuilder.DropTable(
+                name: "ProjectAppointments");
+
+            migrationBuilder.DropTable(
+                name: "ServiceAppointments");
+
+            migrationBuilder.DropTable(
                 name: "ServicePackageItems");
 
             migrationBuilder.DropTable(
@@ -215,7 +326,16 @@ namespace Service_Management_Service.Migrations
                 name: "ServicePackages");
 
             migrationBuilder.DropTable(
+                name: "Services");
+
+            migrationBuilder.DropTable(
+                name: "Employees");
+
+            migrationBuilder.DropTable(
                 name: "Vehicles");
+
+            migrationBuilder.DropTable(
+                name: "Customers");
 
             migrationBuilder.DropTable(
                 name: "Users");

@@ -1,7 +1,9 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Service_Management_Service.Models;
 
+[Table("Appointments")]
 public class Appointment
 {
     [Key]
@@ -13,22 +15,20 @@ public class Appointment
     public int VehicleID { get; set; }
     public Vehicle Vehicle { get; set; } = null!;
 
+    public int? EmployeeID { get; set; }
+    public Employee? Employee { get; set; }
+
     public DateTime StartDate { get; set; }
     public TimeSpan Time { get; set; }
-    public DateTime EndDate { get; set; }
-
-    public string Status { get; set; } = "Pending"; // Pending, Confirmed, Completed, Cancelled
-
-    // Type of appointment
+    public DateTime? EndDate { get; set; }
+    public string Status { get; set; } = "Pending";
     public string AppointmentType { get; set; } = null!; // "Service" or "Project"
 
-    // Service-specific fields
-    public string? ServiceOption { get; set; } // "Full", "Half", "Custom" (only for Service type)
+    public decimal? TotalPrice { get; set; }
 
-    // Project-specific fields
-    public string? ProjectTitle { get; set; }
-    public string? ProjectDescription { get; set; }
+    // Composition
+    public ServiceAppointment? ServiceDetails { get; set; }
+    public ProjectAppointment? ProjectDetails { get; set; }
 
-    // Navigation
     public ICollection<AppointmentService> AppointmentServices { get; set; } = new List<AppointmentService>();
 }

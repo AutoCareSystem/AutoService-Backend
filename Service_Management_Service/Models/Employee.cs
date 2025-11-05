@@ -1,17 +1,23 @@
-// Models/Employee.cs
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Service_Management_Service.Models;
 
-public class Employee : User
+[Table("Employees")]
+public class Employee
 {
-    public int EmpID { get; set; }  // Same as UserID
+    [Key, ForeignKey(nameof(User))]
+    public int UserID { get; set; }
+
+    public User User { get; set; } = null!;
 
     [Required, MaxLength(50)]
-    public string EmpNo { get; set; } = null!; // e.g. "EMP001"
+    public string EmpNo { get; set; } = null!;
 
     [Required, MaxLength(50)]
-    public string Position { get; set; } = null!; // "Mechanic", "Manager"
+    public string Position { get; set; } = null!;
 
     public bool IsActive { get; set; } = true;
+
+    public ICollection<Appointment> AssignedAppointments { get; set; } = new List<Appointment>();
 }
