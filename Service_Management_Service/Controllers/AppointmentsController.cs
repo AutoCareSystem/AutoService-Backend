@@ -269,4 +269,85 @@ public class AppointmentsController : ControllerBase
         return Ok(appointments);
     }
 
+    // GET: api/appointments/customer/9/vehicle/8/summary
+    [HttpGet("customer/{customerId}/vehicle/{vehicleId}/summary")]
+    public async Task<ActionResult<CustomerVehicleSummaryDto>> GetCustomerVehicleSummary(
+        int customerId,
+        int vehicleId)
+    {
+        // === 1. Validate: Vehicle exists and belongs to Customer ===
+        var vehicle = await _context.Vehicles
+            .FirstOrDefaultAsync(v => v.VehicleID == vehicleId && v.CustomerID == customerId);
+
+        if (vehicle == null)
+            return NotFound("Vehicle not found or does not belong to the customer.");
+
+        // === 2. Count total vehicles owned by the customer ===
+        var totalVehicles = await _context.Vehicles
+            .CountAsync(v => v.CustomerID == customerId);
+
+        // === 3. Fetch all appointments for this vehicle ===
+        var appointments = await _context.Appointments
+            .Where(a => a.CustomerID == customerId && a.VehicleID == vehicleId)
+            .Include(a => a.ServiceDetails)
+            .Include(a => a.AppointmentServices)
+            .ToListAsync();
+
+        // === 4. Initialize result with TotalVehicles ===
+        var result = new CustomerVehicleSummaryDto
+        {
+            TotalVehicles = totalVehicles  //  Total vehicles owned
+        };
+
+        // === 5. Loop through appointments and calculate stats ===
+        foreach (var appt in appointments)
+        {
+            // TOTAL SPENT (only Completed)
+            if (appt.Status == "Completed" && appt.TotalPrice.HasValue)
+            {
+                result.TotalSpent += appt.TotalPrice.Value;
+            }
+
+            // COMPLETED COUNT
+            if (appt.Status == "Completed")
+            {
+                result.CompletedCount += CountServicesInAppointment(appt);
+            }
+
+            // PENDING COUNT (Pending or Accepted)
+            if (appt.Status is "Pending" or "Accepted")
+            {
+                result.PendingCount += CountServicesInAppointment(appt);
+            }
+        }
+
+        return Ok(result);
+    }
+
+
+    private int CountServicesInAppointment(Appointment appt)
+    {
+        // Project = 1
+        if (appt.AppointmentType == "Project")
+            return 1;
+
+        // Full / Half Package
+        if (appt.ServiceDetails?.ServiceOption is "Full" or "Half")
+        {
+            if (appt.ServiceDetails.ServicePackageID.HasValue)
+            {
+                // Use sync count if ServicePackageItems already loaded, or async
+                return _context.ServicePackageItems
+                    .Count(i => i.ServicePackageID == appt.ServiceDetails.ServicePackageID.Value);
+            }
+        }
+        // Custom
+        else if (appt.ServiceDetails?.ServiceOption == "Custom")
+        {
+            return appt.AppointmentServices.Count;
+        }
+
+        return 0;
+    }
+
 }
