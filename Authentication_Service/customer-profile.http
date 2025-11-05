@@ -1,0 +1,113 @@
+### Customer Profile Management API Testing
+
+### Variables
+@baseUrl = http://localhost:5000
+@token = your_jwt_token_here
+@userId = 1
+
+### 1. Get Complete Customer Profile
+GET {{baseUrl}}/api/Profile/customer/{{userId}}
+Authorization: Bearer {{token}}
+
+### Expected Response:
+# {
+#   "user": {
+#     "userID": 1,
+#     "name": "Sakna Rajapakshe",
+#     "email": "sakna@gmail.com",
+#     "phone": "07X-XXXXXXX",
+#     "address": "Galle, Sri Lanka",
+#     "loyaltyPoints": 125
+#   },
+#   "vehicle": {
+#     "vehicleID": 1,
+#     "plateNumber": "CAC-4455",
+#     "model": "Toyota Axio",
+#     "company": "Toyota",
+#     "year": "2017",
+#     "vin": "XYZ999999"
+#   },
+#   "upcomingAppointment": {
+#     "appointmentID": 223,
+#     "serviceTitle": "Full Service",
+#     "date": "2025-03-10T10:15:00",
+#     "time": "10:15",
+#     "status": "In Progress",
+#     "progressPercentage": 65,
+#     "appointmentType": "Service",
+#     "employeeName": "John Mechanic"
+#   },
+#   "serviceHistory": [...],
+#   "projects": [...]
+# }
+
+### 2. Update Customer Profile (Name, Phone, Address)
+PUT {{baseUrl}}/api/Profile/customer/{{userId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Sakna Rajapakshe",
+  "phone": "0771234567",
+  "address": "123 Main Street, Galle, Sri Lanka"
+}
+
+### 3. Update/Add Vehicle Information
+PUT {{baseUrl}}/api/Profile/customer/{{userId}}/vehicle
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "model": "Toyota Axio",
+  "year": "2017",
+  "vin": "1HGBH41JXMN109186",
+  "plateNumber": "CAC-4455",
+  "company": "Toyota"
+}
+
+### 4. Get Loyalty Points Only
+GET {{baseUrl}}/api/Profile/customer/{{userId}}/loyalty
+Authorization: Bearer {{token}}
+
+### 5. Add Loyalty Points (Admin/Employee Only)
+POST {{baseUrl}}/api/Profile/customer/{{userId}}/loyalty/add
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "points": 50
+}
+
+### 6. Get All Customers (Admin Only)
+GET {{baseUrl}}/api/Profile/customers
+Authorization: Bearer {{token}}
+
+### ============================================
+### Authentication Endpoints (from AuthController)
+### ============================================
+
+### 7. Register New Customer
+POST {{baseUrl}}/api/Auth/register
+Content-Type: application/json
+
+{
+  "email": "customer@example.com",
+  "password": "Customer123!",
+  "role": "Customer"
+}
+
+### 8. Login
+POST {{baseUrl}}/api/Auth/login
+Content-Type: application/json
+
+{
+  "email": "customer@example.com",
+  "password": "Customer123!"
+}
+
+### Response will include:
+# {
+#   "accessToken": "eyJhbGc...",
+#   "refreshToken": "guid-string",
+#   "role": "Customer"
+# }
