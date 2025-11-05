@@ -1,0 +1,38 @@
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace backend_EAD.Models;
+
+[Table("Appointments")]
+public class Appointment
+{
+    [Key]
+    public int AppointmentID { get; set; }
+
+    public int CustomerID { get; set; }
+    public Customer Customer { get; set; } = null!;
+
+    public int VehicleID { get; set; }
+    public Vehicle Vehicle { get; set; } = null!;
+
+    public int? EmployeeID { get; set; }
+    public Employee? Employee { get; set; }
+
+    public DateTime StartDate { get; set; }
+    public TimeSpan Time { get; set; }
+    public DateTime? EndDate { get; set; }
+
+    [MaxLength(50)]
+    public string Status { get; set; } = "Pending"; // Pending, Confirmed, In Progress, Completed, Cancelled
+
+    [MaxLength(20)]
+    public string AppointmentType { get; set; } = null!; // "Service" or "Project"
+
+    public decimal? TotalPrice { get; set; }
+
+    // Composition
+    public ServiceAppointment? ServiceDetails { get; set; }
+    public ProjectAppointment? ProjectDetails { get; set; }
+
+    public ICollection<AppointmentService> AppointmentServices { get; set; } = new List<AppointmentService>();
+}
