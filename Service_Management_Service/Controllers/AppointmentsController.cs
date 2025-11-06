@@ -214,4 +214,300 @@ public class AppointmentsController : ControllerBase
 
         return Ok(appointment);
     }
+
+    // GET: api/appointments?status=Pending&type=Service&employeeId=42
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<Appointment>>> GetAppointments(
+        [FromQuery] string? status,
+        [FromQuery] string? type,
+        [FromQuery] int? employeeId)
+    {
+        var query = _context.Appointments
+            .Include(a => a.Customer).ThenInclude(c => c.User)
+            .Include(a => a.Vehicle)
+            .Include(a => a.Employee).ThenInclude(e => e.User)
+            .Include(a => a.ServiceDetails)
+                .ThenInclude(s => s.ServicePackage)
+                .ThenInclude(p => p.Items)
+                .ThenInclude(i => i.Service)
+            .Include(a => a.ProjectDetails)
+            .Include(a => a.AppointmentServices)
+                .ThenInclude(aps => aps.Service)
+            .AsQueryable();
+
+        // === FILTER: Status (case-insensitive) ===
+        if (!string.IsNullOrWhiteSpace(status))
+        {
+            var statusNorm = status.Trim().ToLower();
+            query = query.Where(a => a.Status != null && a.Status.ToLower() == statusNorm);
+        }
+
+        // === FILTER: AppointmentType ===
+        if (!string.IsNullOrWhiteSpace(type))
+        {
+            var typeNorm = type.Trim().ToLower();
+            if (!new[] { "Service", "Project" }.Contains(typeNorm, StringComparer.OrdinalIgnoreCase))
+                return BadRequest("Invalid type. Must be 'Service' or 'Project'.");
+
+            query = query.Where(a => a.AppointmentType.ToLower() == typeNorm);
+        }
+
+        // === FILTER: EmployeeID (only assigned) ===
+        if (employeeId.HasValue)
+        {
+            query = query.Where(a => a.EmployeeID == employeeId.Value);
+        }
+
+        // === ORDERING ===
+        query = query
+            .OrderBy(a => a.StartDate)
+            .ThenBy(a => a.Time);
+
+        // === EXECUTE ===
+        var appointments = await query.ToListAsync();
+
+        return Ok(appointments);
+    }
+
+    // GET: api/appointments/customer/9/vehicle/8/summary
+    [HttpGet("customer/{customerId}/vehicle/{vehicleId}/summary")]
+    public async Task<ActionResult<CustomerVehicleSummaryDto>> GetCustomerVehicleSummary(
+        int customerId,
+        int vehicleId)
+    {
+        // === 1. Validate: Vehicle exists and belongs to Customer ===
+        var vehicle = await _context.Vehicles
+            .FirstOrDefaultAsync(v => v.VehicleID == vehicleId && v.CustomerID == customerId);
+
+        if (vehicle == null)
+            return NotFound("Vehicle not found or does not belong to the customer.");
+
+        // === 2. Count total vehicles owned by the customer ===
+        var totalVehicles = await _context.Vehicles
+            .CountAsync(v => v.CustomerID == customerId);
+
+        // === 3. Fetch all appointments for this vehicle ===
+        var appointments = await _context.Appointments
+            .Where(a => a.CustomerID == customerId && a.VehicleID == vehicleId)
+            .Include(a => a.ServiceDetails)
+            .Include(a => a.AppointmentServices)
+            .ToListAsync();
+
+        // === 4. Initialize result with TotalVehicles ===
+        var result = new CustomerVehicleSummaryDto
+        {
+            TotalVehicles = totalVehicles  //  Total vehicles owned
+        };
+
+        // === 5. Loop through appointments and calculate stats ===
+        foreach (var appt in appointments)
+        {
+            // TOTAL SPENT (only Completed)
+            if (appt.Status == "Completed" && appt.TotalPrice.HasValue)
+            {
+                result.TotalSpent += appt.TotalPrice.Value;
+            }
+
+            // COMPLETED COUNT
+            if (appt.Status == "Completed")
+            {
+                result.CompletedCount += CountServicesInAppointment(appt);
+            }
+
+            // PENDING COUNT (Pending or Accepted)
+            if (appt.Status is "Pending" or "Accepted")
+            {
+                result.PendingCount += CountServicesInAppointment(appt);
+            }
+        }
+
+        return Ok(result);
+    }
+
+    // PUT: api/appointments/123/accept
+    [HttpPut("{id}/accept")]
+    public async Task<IActionResult> AcceptAppointment(int id, [FromBody] AcceptAppointmentDto dto)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var appointment = await _context.Appointments
+            .Include(a => a.Employee)
+            .FirstOrDefaultAsync(a => a.AppointmentID == id);
+
+        if (appointment == null)
+            return NotFound("Appointment not found.");
+
+        if (appointment.EmployeeID.HasValue)
+            return BadRequest("Appointment is already assigned.");
+
+        if (appointment.Status != "Pending")
+            return BadRequest("Only Pending appointments can be accepted.");
+
+        var employee = await _context.Employees
+            .FirstOrDefaultAsync(e => e.UserID == dto.EmployeeID && e.IsActive);
+
+        if (employee == null)
+            return BadRequest("Invalid or inactive employee.");
+
+        // === UPDATE ===
+        appointment.EmployeeID = dto.EmployeeID;
+        appointment.Status = "Approved";
+
+        try
+        {
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Appointment accepted.", status = "Approved" });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Error: {ex.Message}");
+        }
+    }
+
+    // PUT: api/appointments/123/complete
+    [HttpPut("{id}/complete")]
+    public async Task<IActionResult> CompleteAppointment(int id, [FromBody] CompleteAppointmentDto dto)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var appointment = await _context.Appointments
+            .Include(a => a.Employee)
+            .FirstOrDefaultAsync(a => a.AppointmentID == id);
+
+        if (appointment == null)
+            return NotFound("Appointment not found.");
+
+        if (!appointment.EmployeeID.HasValue)
+            return BadRequest("Appointment must be assigned to an employee.");
+
+        if (appointment.EmployeeID != dto.EmployeeID)
+            return Forbid("You can only complete your own appointments.");
+
+        if (appointment.Status == "Completed")
+            return BadRequest("Appointment is already completed.");
+
+        if (appointment.Status != "Approved")
+            return BadRequest("Only Approved appointments can be completed.");
+
+        // === UPDATE ===
+        appointment.Status = "Completed";
+
+        try
+        {
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Appointment completed.", status = "Completed" });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Error: {ex.Message}");
+        }
+    }
+
+    // GET: api/appointments/service?option=Full&status=Approved
+    [HttpGet("service")]
+    public async Task<ActionResult<IEnumerable<ServiceAppointmentDetailsDto>>> GetServiceAppointments(
+        [FromQuery] string? option = null,   // "Full", "Half", "Custom", or null (all)
+        [FromQuery] string? status = null)
+    {
+        var validOptions = new[] { "Full", "Half", "Custom" };
+
+        if (option != null && !validOptions.Contains(option, StringComparer.OrdinalIgnoreCase))
+            return BadRequest("Invalid option. Use: Full, Half, Custom, or leave empty for all.");
+
+        var query = _context.Appointments
+            .Where(a => a.AppointmentType == "Service");
+
+        // === FILTER BY OPTION ===
+        if (!string.IsNullOrEmpty(option))
+        {
+            var opt = option.Trim();
+            query = query.Where(a =>
+                a.ServiceDetails != null &&
+                a.ServiceDetails.ServiceOption == opt);
+        }
+
+        // === FILTER BY STATUS ===
+        if (!string.IsNullOrEmpty(status))
+        {
+            query = query.Where(a => a.Status == status);
+        }
+
+        var appointments = await query
+            .Include(a => a.Customer).ThenInclude(c => c.User)
+            .Include(a => a.Vehicle)
+            .Include(a => a.Employee).ThenInclude(e => e.User)
+            .Include(a => a.ServiceDetails)
+                .ThenInclude(sd => sd!.ServicePackage)
+                .ThenInclude(p => p!.Items)
+                .ThenInclude(i => i.Service)
+            .Include(a => a.AppointmentServices)
+                .ThenInclude(aps => aps.Service)
+            .OrderByDescending(a => a.StartDate)
+            .ThenBy(a => a.Time)
+            .ToListAsync();
+
+        var result = appointments.Select(a => new ServiceAppointmentDetailsDto
+        {
+            AppointmentID = a.AppointmentID,
+            CustomerName = a.Customer.User.Name,
+            CustomerEmail = a.Customer.User.Email,
+            VehicleInfo = $"{a.Vehicle.Company} {a.Vehicle.Model} ({a.Vehicle.Year}) - {a.Vehicle.PlateNumber}",
+            StartDate = a.StartDate,
+            Time = a.Time,
+            Status = a.Status,
+            EmployeeName = a.Employee?.User.Name ?? "Not Assigned",
+            ServiceOption = a.ServiceDetails?.ServiceOption ?? "Unknown",
+            TotalPrice = a.TotalPrice ?? 0m,
+
+            // FULL / HALF PACKAGE
+            PackageName = a.ServiceDetails?.ServicePackage?.Name,
+            PackageType = a.ServiceDetails?.ServicePackage?.PackageType,
+            PackageServices = a.ServiceDetails?.ServicePackage?.Items
+                .Select(i => new ServiceItemDto
+                {
+                    Title = i.Service.Title,
+                    Price = i.Service.Price
+                })
+                .ToList() ?? new List<ServiceItemDto>(),
+
+            // CUSTOM SERVICES
+            CustomServices = a.AppointmentServices
+                .Select(aps => new ServiceItemDto
+                {
+                    Title = aps.Service.Title,
+                    Price = aps.CustomPrice ?? aps.Service.Price
+                })
+                .ToList()
+        }).ToList();
+
+        return Ok(result);
+    }
+
+    private int CountServicesInAppointment(Appointment appt)
+    {
+        // Project = 1
+        if (appt.AppointmentType == "Project")
+            return 1;
+
+        // Full / Half Package
+        if (appt.ServiceDetails?.ServiceOption is "Full" or "Half")
+        {
+            if (appt.ServiceDetails.ServicePackageID.HasValue)
+            {
+                // Use sync count if ServicePackageItems already loaded, or async
+                return _context.ServicePackageItems
+                    .Count(i => i.ServicePackageID == appt.ServiceDetails.ServicePackageID.Value);
+            }
+        }
+        // Custom
+        else if (appt.ServiceDetails?.ServiceOption == "Custom")
+        {
+            return appt.AppointmentServices.Count;
+        }
+
+        return 0;
+    }
+
 }

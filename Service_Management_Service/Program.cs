@@ -1,9 +1,12 @@
+using DotNetEnv;
 using Microsoft.EntityFrameworkCore;
-using Service_Management_Service.Data; 
+using Service_Management_Service.Data;
+
+Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
