@@ -9,10 +9,11 @@ public class ServiceAppointment
     [Key, ForeignKey(nameof(Appointment))]
     public int AppointmentID { get; set; }
 
-    [Required, MaxLength(50)]
+    [Required]
     public string ServiceOption { get; set; } = null!; // Full, Half, Custom
 
     public int? ServicePackageID { get; set; }
+    public ServicePackage? ServicePackage { get; set; }
 
     public Appointment Appointment { get; set; } = null!;
 }

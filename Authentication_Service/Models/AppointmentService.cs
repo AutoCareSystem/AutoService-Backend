@@ -3,7 +3,6 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace backend_EAD.Models;
 
-[Table("AppointmentServices")]
 public class AppointmentService
 {
     [Key]
@@ -15,6 +14,6 @@ public class AppointmentService
     public int ServiceID { get; set; }
     public Service Service { get; set; } = null!;
 
-    public decimal? Price { get; set; }
-    public int? Duration { get; set; }
+    // Optional override (e.g. custom price)
+    public decimal? CustomPrice { get; set; }
 }
