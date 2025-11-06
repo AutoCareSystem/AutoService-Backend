@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("TimeLogging-Service")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0a49ecac93e805731d7365e9b418a1bdec1ff134")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a9c891c0cef6817d9e05cc75e68e1e0468c84e55")]
 [assembly: System.Reflection.AssemblyProductAttribute("TimeLogging-Service")]
 [assembly: System.Reflection.AssemblyTitleAttribute("TimeLogging-Service")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
