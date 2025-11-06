@@ -30,6 +30,21 @@ public class AuthController : ControllerBase
         var user = new AppUser { UserName = dto.Email, Email = dto.Email, Role = dto.Role };
         var result = await _userManager.CreateAsync(user, dto.Password);
         if (!result.Succeeded) return BadRequest(result.Errors);
+        
+        // Create Customer or Employee record based on role
+        if (dto.Role == "Customer")
+        {
+            var customer = new Customer { UserID = user.Id, LoyaltyPoints = 0 };
+            _db.Customers.Add(customer);
+            await _db.SaveChangesAsync();
+        }
+        else if (dto.Role == "Employee")
+        {
+            var employee = new Employee { UserID = user.Id, IsActive = true, Position = "Staff" };
+            _db.Employees.Add(employee);
+            await _db.SaveChangesAsync();
+        }
+        
         return Ok("User registered");
     }
 
