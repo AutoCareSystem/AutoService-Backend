@@ -4,7 +4,7 @@ namespace Service_Management_Service.DTOs
     {
         public int CustomerID { get; set; }
         public int VehicleID { get; set; }
-        public DateTime StartDate { get; set; }
+        public string StartDate { get; set; }
         public TimeSpan Time { get; set; }
         public DateTime? EndDate { get; set; } 
         public string AppointmentType { get; set; } = null!; // "Service" or "Project"
