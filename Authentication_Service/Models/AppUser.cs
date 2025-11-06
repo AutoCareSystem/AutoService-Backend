@@ -4,7 +4,13 @@ namespace backend_EAD.Models
 {
     public class AppUser : IdentityUser
     {
-        public string Role { get; set; } = "User"; 
+        // Additional fields from old Users table
+        public string Name { get; set; } = null!; // Maps to old Users.Name
+        public string Role { get; set; } = "Customer"; // Customer, Employee, Admin
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        // Navigation properties
+        public Customer? Customer { get; set; }
+        public Employee? Employee { get; set; }
     }
 }

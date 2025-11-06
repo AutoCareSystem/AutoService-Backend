@@ -9,7 +9,9 @@ public class Vehicle
     [Key]
     public int VehicleID { get; set; }
 
-    public int CustomerID { get; set; }
+    [ForeignKey(nameof(Customer))]
+    public string CustomerID { get; set; } = null!; // Changed from int to string to match Customer.AppUserId
+
     public Customer Customer { get; set; } = null!;
 
     [Required, MaxLength(100)]

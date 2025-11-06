@@ -21,15 +21,15 @@ public class ProfileController : ControllerBase
 
     // GET: api/Profile/customer/{userId}
     [HttpGet("customer/{userId}")]
-    public async Task<ActionResult<CustomerProfileDto>> GetCustomerProfile(int userId)
+    public async Task<ActionResult<CustomerProfileDto>> GetCustomerProfile(string userId) // Changed from int to string
     {
-        // Get customer with user info
+        // Get customer with AppUser info
         var customer = await _db.Customers
-            .Include(c => c.User)
+            .Include(c => c.AppUser) // Changed from User to AppUser
             .Include(c => c.Vehicles)
             .Include(c => c.Appointments)
                 .ThenInclude(a => a.Employee)
-                    .ThenInclude(e => e!.User)
+                    .ThenInclude(e => e!.AppUser) // Changed from User to AppUser
             .Include(c => c.Appointments)
                 .ThenInclude(a => a.ServiceDetails)
             .Include(c => c.Appointments)
@@ -37,7 +37,7 @@ public class ProfileController : ControllerBase
             .Include(c => c.Appointments)
                 .ThenInclude(a => a.AppointmentServices)
                     .ThenInclude(aps => aps.Service)
-            .FirstOrDefaultAsync(c => c.UserID == userId);
+            .FirstOrDefaultAsync(c => c.AppUserId == userId); // Changed from UserID to AppUserId
 
         if (customer == null)
             return NotFound($"Customer with UserID {userId} not found");
@@ -45,12 +45,13 @@ public class ProfileController : ControllerBase
         // Build User Info
         var userInfo = new UserInfoDto
         {
-            UserID = customer.User.UserID,
-            Name = customer.User.Name,
-            Email = customer.User.Email,
-            Phone = customer.User.Phone,
+            UserID = customer.AppUser.Id, // Changed to AspNetUsers Id
+            Name = customer.AppUser.Name,
+            Email = customer.AppUser.Email!,
+            Phone = customer.AppUser.PhoneNumber!, // Changed from Phone to PhoneNumber
             Address = customer.Address,
-            LoyaltyPoints = customer.LoyaltyPoints
+            LoyaltyPoints = customer.LoyaltyPoints,
+            Role = customer.AppUser.Role
         };
 
         // Build Vehicle Info (assuming one vehicle per customer)
@@ -82,12 +83,10 @@ public class ProfileController : ControllerBase
                 ? (activeAppointment.ServiceDetails?.ServiceOption ?? "Service Appointment")
                 : (activeAppointment.ProjectDetails?.ProjectTitle ?? "Project Appointment");
 
-            // Calculate progress percentage (simplified - can be enhanced with time logs)
+            // Calculate progress percentage
             int? progressPercentage = null;
             if (activeAppointment.Status == "In Progress")
             {
-                // Simple calculation: if in progress, assume 50%
-                // You can enhance this with actual time log data
                 progressPercentage = 50;
             }
             else if (activeAppointment.Status == "Completed")
@@ -104,11 +103,11 @@ public class ProfileController : ControllerBase
                 Status = activeAppointment.Status,
                 ProgressPercentage = progressPercentage,
                 AppointmentType = activeAppointment.AppointmentType,
-                EmployeeName = activeAppointment.Employee?.User.Name
+                EmployeeName = activeAppointment.Employee?.AppUser.Name // Changed from User to AppUser
             };
         }
 
-        // Build Service History (completed appointments)
+        // Build Service History
         var serviceHistory = customer.Appointments
             .Where(a => a.Status == "Completed")
             .OrderByDescending(a => a.StartDate)
@@ -123,10 +122,10 @@ public class ProfileController : ControllerBase
                 TotalPrice = a.TotalPrice,
                 AppointmentType = a.AppointmentType
             })
-            .Take(10)  // Last 10 services
+            .Take(10)
             .ToList();
 
-        // Build Project/Modification Requests
+        // Build Projects
         var projects = customer.Appointments
             .Where(a => a.AppointmentType == "Project")
             .OrderByDescending(a => a.StartDate)
@@ -137,12 +136,11 @@ public class ProfileController : ControllerBase
                 ProjectDescription = a.ProjectDetails?.ProjectDescription,
                 Status = a.Status,
                 RequestedAt = a.StartDate,
-                AssignedEmployee = a.Employee != null ? a.Employee.User.Name : null,
+                AssignedEmployee = a.Employee != null ? a.Employee.AppUser.Name : null, // Changed from User to AppUser
                 TotalPrice = a.TotalPrice
             })
             .ToList();
 
-        // Build complete profile
         var profile = new CustomerProfileDto
         {
             User = userInfo,
@@ -157,21 +155,21 @@ public class ProfileController : ControllerBase
 
     // PUT: api/Profile/customer/{userId}
     [HttpPut("customer/{userId}")]
-    public async Task<IActionResult> UpdateCustomerProfile(int userId, [FromBody] UpdateProfileDto dto)
+    public async Task<IActionResult> UpdateCustomerProfile(string userId, [FromBody] UpdateProfileDto dto) // Changed from int to string
     {
         var customer = await _db.Customers
-            .Include(c => c.User)
-            .FirstOrDefaultAsync(c => c.UserID == userId);
+            .Include(c => c.AppUser) // Changed from User to AppUser
+            .FirstOrDefaultAsync(c => c.AppUserId == userId); // Changed from UserID to AppUserId
 
         if (customer == null)
             return NotFound($"Customer with UserID {userId} not found");
 
-        // Update User fields
+        // Update AppUser fields
         if (!string.IsNullOrWhiteSpace(dto.Name))
-            customer.User.Name = dto.Name;
+            customer.AppUser.Name = dto.Name;
 
         if (!string.IsNullOrWhiteSpace(dto.Phone))
-            customer.User.Phone = dto.Phone;
+            customer.AppUser.PhoneNumber = dto.Phone; // Changed from Phone to PhoneNumber
 
         // Update Customer fields
         if (!string.IsNullOrWhiteSpace(dto.Address))
@@ -184,21 +182,19 @@ public class ProfileController : ControllerBase
 
     // PUT: api/Profile/customer/{userId}/vehicle
     [HttpPut("customer/{userId}/vehicle")]
-    public async Task<IActionResult> UpdateOrAddVehicle(int userId, [FromBody] UpdateVehicleDto dto)
+    public async Task<IActionResult> UpdateOrAddVehicle(string userId, [FromBody] UpdateVehicleDto dto) // Changed from int to string
     {
         var customer = await _db.Customers
             .Include(c => c.Vehicles)
-            .FirstOrDefaultAsync(c => c.UserID == userId);
+            .FirstOrDefaultAsync(c => c.AppUserId == userId); // Changed from UserID to AppUserId
 
         if (customer == null)
             return NotFound($"Customer with UserID {userId} not found");
 
-        // Check if customer already has a vehicle
         var existingVehicle = customer.Vehicles.FirstOrDefault();
 
         if (existingVehicle != null)
         {
-            // Update existing vehicle
             existingVehicle.Model = dto.Model;
             existingVehicle.Year = dto.Year;
             existingVehicle.Vin = dto.Vin;
@@ -207,10 +203,9 @@ public class ProfileController : ControllerBase
         }
         else
         {
-            // Add new vehicle
             var newVehicle = new Vehicle
             {
-                CustomerID = customer.UserID,
+                CustomerID = customer.AppUserId, // Changed from UserID to AppUserId
                 Model = dto.Model,
                 Year = dto.Year,
                 Vin = dto.Vin,
@@ -227,9 +222,9 @@ public class ProfileController : ControllerBase
 
     // GET: api/Profile/customer/{userId}/loyalty
     [HttpGet("customer/{userId}/loyalty")]
-    public async Task<ActionResult<object>> GetLoyaltyPoints(int userId)
+    public async Task<ActionResult<object>> GetLoyaltyPoints(string userId) // Changed from int to string
     {
-        var customer = await _db.Customers.FindAsync(userId);
+        var customer = await _db.Customers.FirstOrDefaultAsync(c => c.AppUserId == userId); // Changed from FindAsync
 
         if (customer == null)
             return NotFound($"Customer with UserID {userId} not found");
@@ -240,12 +235,12 @@ public class ProfileController : ControllerBase
     // POST: api/Profile/customer/{userId}/loyalty/add
     [HttpPost("customer/{userId}/loyalty/add")]
     [Authorize(Roles = "Admin,Employee")]
-    public async Task<IActionResult> AddLoyaltyPoints(int userId, [FromBody] AddLoyaltyPointsDto dto)
+    public async Task<IActionResult> AddLoyaltyPoints(string userId, [FromBody] AddLoyaltyPointsDto dto) // Changed from int to string
     {
         if (dto.Points <= 0)
             return BadRequest("Points must be positive");
 
-        var customer = await _db.Customers.FindAsync(userId);
+        var customer = await _db.Customers.FirstOrDefaultAsync(c => c.AppUserId == userId); // Changed from FindAsync
 
         if (customer == null)
             return NotFound($"Customer with UserID {userId} not found");
@@ -256,36 +251,39 @@ public class ProfileController : ControllerBase
         return Ok(new { message = $"Added {dto.Points} loyalty points", totalPoints = customer.LoyaltyPoints });
     }
 
-    // GET: api/Profile/customers (Admin only - get all customers)
+    // GET: api/Profile/customers (Admin only)
     [HttpGet("customers")]
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult<List<UserInfoDto>>> GetAllCustomers()
     {
         var customers = await _db.Customers
-            .Include(c => c.User)
+            .Include(c => c.AppUser) // Changed from User to AppUser
             .Select(c => new UserInfoDto
             {
-                UserID = c.UserID,
-                Name = c.User.Name,
-                Email = c.User.Email,
-                Phone = c.User.Phone,
+                UserID = c.AppUser.Id, // Changed to AspNetUsers Id
+                Name = c.AppUser.Name,
+                Email = c.AppUser.Email!,
+                Phone = c.AppUser.PhoneNumber!, // Changed from Phone to PhoneNumber
                 Address = c.Address,
-                LoyaltyPoints = c.LoyaltyPoints
+                LoyaltyPoints = c.LoyaltyPoints,
+                Role = c.AppUser.Role
             })
             .ToListAsync();
 
         return Ok(customers);
     }
 
+    // ============== EMPLOYEE PROFILE ENDPOINTS ==============
+
     // GET: api/Profile/employee/{userId}
     [HttpGet("employee/{userId}")]
-    public async Task<ActionResult<EmployeeProfileDto>> GetEmployeeProfile(int userId)
+    public async Task<ActionResult<EmployeeProfileDto>> GetEmployeeProfile(string userId) // Changed from int to string
     {
         var employee = await _db.Employees
-            .Include(e => e.User)
+            .Include(e => e.AppUser) // Changed from User to AppUser
             .Include(e => e.Appointments)
                 .ThenInclude(a => a.Customer)
-                    .ThenInclude(c => c.User)
+                    .ThenInclude(c => c.AppUser) // Changed from User to AppUser
             .Include(e => e.Appointments)
                 .ThenInclude(a => a.ServiceDetails)
             .Include(e => e.Appointments)
@@ -293,23 +291,21 @@ public class ProfileController : ControllerBase
             .Include(e => e.Appointments)
                 .ThenInclude(a => a.Customer)
                     .ThenInclude(c => c.Vehicles)
-            .FirstOrDefaultAsync(e => e.UserID == userId);
+            .FirstOrDefaultAsync(e => e.AppUserId == userId); // Changed from UserID to AppUserId
 
         if (employee == null)
             return NotFound($"Employee with UserID {userId} not found");
 
-        // Calculate statistics
         var totalAppointments = employee.Appointments.Count;
         var completedAppointments = employee.Appointments.Count(a => a.Status == "Completed");
 
-        // Get recent appointments (last 10)
         var recentAppointments = employee.Appointments
             .OrderByDescending(a => a.StartDate)
             .Take(10)
             .Select(a => new EmployeeAppointmentDto
             {
                 AppointmentID = a.AppointmentID,
-                CustomerName = a.Customer.User.Name,
+                CustomerName = a.Customer.AppUser.Name, // Changed from User to AppUser
                 AppointmentType = a.AppointmentType,
                 ServiceTitle = a.AppointmentType == "Service"
                     ? (a.ServiceDetails?.ServiceOption ?? "Service Appointment")
@@ -325,11 +321,11 @@ public class ProfileController : ControllerBase
 
         var profile = new EmployeeProfileDto
         {
-            EmployeeID = employee.UserID,
-            UserID = employee.UserID,
-            Name = employee.User.Name,
-            Email = employee.User.Email,
-            Phone = employee.User.Phone,
+            EmployeeID = employee.AppUserId, // Changed from UserID
+            UserID = employee.AppUserId, // Changed from UserID
+            Name = employee.AppUser.Name,
+            Email = employee.AppUser.Email!,
+            Phone = employee.AppUser.PhoneNumber!, // Changed from Phone to PhoneNumber
             Position = employee.Position,
             HourlyRate = employee.HourlyRate,
             TotalAppointments = totalAppointments,
@@ -342,21 +338,21 @@ public class ProfileController : ControllerBase
 
     // PUT: api/Profile/employee/{userId}
     [HttpPut("employee/{userId}")]
-    public async Task<IActionResult> UpdateEmployeeProfile(int userId, [FromBody] UpdateEmployeeProfileDto dto)
+    public async Task<IActionResult> UpdateEmployeeProfile(string userId, [FromBody] UpdateEmployeeProfileDto dto) // Changed from int to string
     {
         var employee = await _db.Employees
-            .Include(e => e.User)
-            .FirstOrDefaultAsync(e => e.UserID == userId);
+            .Include(e => e.AppUser) // Changed from User to AppUser
+            .FirstOrDefaultAsync(e => e.AppUserId == userId); // Changed from UserID to AppUserId
 
         if (employee == null)
             return NotFound($"Employee with UserID {userId} not found");
 
-        // Update User fields
+        // Update AppUser fields
         if (!string.IsNullOrWhiteSpace(dto.Name))
-            employee.User.Name = dto.Name;
+            employee.AppUser.Name = dto.Name;
 
         if (!string.IsNullOrWhiteSpace(dto.Phone))
-            employee.User.Phone = dto.Phone;
+            employee.AppUser.PhoneNumber = dto.Phone; // Changed from Phone to PhoneNumber
 
         // Update Employee-specific fields
         if (!string.IsNullOrWhiteSpace(dto.Position))
@@ -367,20 +363,20 @@ public class ProfileController : ControllerBase
         return Ok(new { message = "Employee profile updated successfully" });
     }
 
-    // GET: api/Profile/employees (Admin only - get all employees)
+    // GET: api/Profile/employees (Admin only)
     [HttpGet("employees")]
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult<List<object>>> GetAllEmployees()
     {
         var employees = await _db.Employees
-            .Include(e => e.User)
+            .Include(e => e.AppUser) // Changed from User to AppUser
             .Include(e => e.Appointments)
             .Select(e => new
             {
-                EmployeeID = e.UserID,
-                Name = e.User.Name,
-                Email = e.User.Email,
-                Phone = e.User.Phone,
+                EmployeeID = e.AppUserId, // Changed from UserID
+                Name = e.AppUser.Name,
+                Email = e.AppUser.Email,
+                Phone = e.AppUser.PhoneNumber, // Changed from Phone to PhoneNumber
                 Position = e.Position,
                 HourlyRate = e.HourlyRate,
                 TotalAppointments = e.Appointments.Count,

@@ -15,7 +15,7 @@ public class CustomerProfileDto
 // User Information Section
 public class UserInfoDto
 {
-    public int UserID { get; set; }
+    public string UserID { get; set; } = null!; // Changed from int to string
     public string Name { get; set; } = null!;
     public string Email { get; set; } = null!;
     public string Phone { get; set; } = null!;
@@ -108,13 +108,10 @@ public class UpdateVehicleDto
     public string? Company { get; set; }
 }
 
-// ============== EMPLOYEE PROFILE DTOs ==============
-
-// Employee Profile Response DTO
 public class EmployeeProfileDto
 {
-    public int EmployeeID { get; set; }
-    public int UserID { get; set; }
+    public string EmployeeID { get; set; } = null!; // Changed from int to string
+    public string UserID { get; set; } = null!; // Changed from int to string
     public string Name { get; set; } = null!;
     public string Email { get; set; } = null!;
     public string Phone { get; set; } = null!;

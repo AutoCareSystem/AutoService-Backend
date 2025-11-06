@@ -9,13 +9,17 @@ public class Appointment
     [Key]
     public int AppointmentID { get; set; }
 
-    public int CustomerID { get; set; }
+    [ForeignKey(nameof(Customer))]
+    public string CustomerID { get; set; } = null!; // Changed from int to string
+
     public Customer Customer { get; set; } = null!;
 
     public int VehicleID { get; set; }
     public Vehicle Vehicle { get; set; } = null!;
 
-    public int? EmployeeID { get; set; }
+    [ForeignKey(nameof(Employee))]
+    public string? EmployeeID { get; set; } // Changed from int? to string?
+
     public Employee? Employee { get; set; }
 
     public DateTime StartDate { get; set; }

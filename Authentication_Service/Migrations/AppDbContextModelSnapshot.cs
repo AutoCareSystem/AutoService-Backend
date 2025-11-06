@@ -182,6 +182,10 @@ namespace backend.Migrations
                     b.Property<DateTimeOffset?>("LockoutEnd")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<string>("NormalizedEmail")
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
@@ -238,11 +242,12 @@ namespace backend.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
 
-                    b.Property<int>("CustomerID")
-                        .HasColumnType("integer");
+                    b.Property<string>("CustomerID")
+                        .IsRequired()
+                        .HasColumnType("text");
 
-                    b.Property<int?>("EmployeeID")
-                        .HasColumnType("integer");
+                    b.Property<string>("EmployeeID")
+                        .HasColumnType("text");
 
                     b.Property<DateTime?>("EndDate")
                         .HasColumnType("timestamp with time zone");
@@ -306,8 +311,8 @@ namespace backend.Migrations
 
             modelBuilder.Entity("backend_EAD.Models.Customer", b =>
                 {
-                    b.Property<int>("UserID")
-                        .HasColumnType("integer");
+                    b.Property<string>("AppUserId")
+                        .HasColumnType("text");
 
                     b.Property<string>("Address")
                         .HasMaxLength(200)
@@ -316,15 +321,15 @@ namespace backend.Migrations
                     b.Property<int>("LoyaltyPoints")
                         .HasColumnType("integer");
 
-                    b.HasKey("UserID");
+                    b.HasKey("AppUserId");
 
                     b.ToTable("Customers");
                 });
 
             modelBuilder.Entity("backend_EAD.Models.Employee", b =>
                 {
-                    b.Property<int>("UserID")
-                        .HasColumnType("integer");
+                    b.Property<string>("AppUserId")
+                        .HasColumnType("text");
 
                     b.Property<decimal>("HourlyRate")
                         .HasColumnType("numeric");
@@ -334,7 +339,7 @@ namespace backend.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
-                    b.HasKey("UserID");
+                    b.HasKey("AppUserId");
 
                     b.ToTable("Employees");
                 });
@@ -441,34 +446,6 @@ namespace backend.Migrations
                     b.ToTable("ServiceAppointments");
                 });
 
-            modelBuilder.Entity("backend_EAD.Models.User", b =>
-                {
-                    b.Property<int>("UserID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("UserID"));
-
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<string>("Phone")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
-
-                    b.HasKey("UserID");
-
-                    b.ToTable("Users");
-                });
-
             modelBuilder.Entity("backend_EAD.Models.Vehicle", b =>
                 {
                     b.Property<int>("VehicleID")
@@ -481,8 +458,9 @@ namespace backend.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
-                    b.Property<int>("CustomerID")
-                        .HasColumnType("integer");
+                    b.Property<string>("CustomerID")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<string>("Model")
                         .IsRequired()
@@ -567,12 +545,13 @@ namespace backend.Migrations
                     b.HasOne("backend_EAD.Models.Customer", "Customer")
                         .WithMany("Appointments")
                         .HasForeignKey("CustomerID")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("backend_EAD.Models.Employee", "Employee")
                         .WithMany("Appointments")
-                        .HasForeignKey("EmployeeID");
+                        .HasForeignKey("EmployeeID")
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("backend_EAD.Models.Vehicle", "Vehicle")
                         .WithMany()
@@ -608,24 +587,24 @@ namespace backend.Migrations
 
             modelBuilder.Entity("backend_EAD.Models.Customer", b =>
                 {
-                    b.HasOne("backend_EAD.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserID")
+                    b.HasOne("backend_EAD.Models.AppUser", "AppUser")
+                        .WithOne("Customer")
+                        .HasForeignKey("backend_EAD.Models.Customer", "AppUserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("User");
+                    b.Navigation("AppUser");
                 });
 
             modelBuilder.Entity("backend_EAD.Models.Employee", b =>
                 {
-                    b.HasOne("backend_EAD.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserID")
+                    b.HasOne("backend_EAD.Models.AppUser", "AppUser")
+                        .WithOne("Employee")
+                        .HasForeignKey("backend_EAD.Models.Employee", "AppUserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("User");
+                    b.Navigation("AppUser");
                 });
 
             modelBuilder.Entity("backend_EAD.Models.ProjectAppointment", b =>
@@ -670,6 +649,13 @@ namespace backend.Migrations
                         .IsRequired();
 
                     b.Navigation("Customer");
+                });
+
+            modelBuilder.Entity("backend_EAD.Models.AppUser", b =>
+                {
+                    b.Navigation("Customer");
+
+                    b.Navigation("Employee");
                 });
 
             modelBuilder.Entity("backend_EAD.Models.Appointment", b =>
