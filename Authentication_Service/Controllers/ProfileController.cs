@@ -46,7 +46,7 @@ public class ProfileController : ControllerBase
 
         var userInfo = new UserInfoDto
         {
-            UserID = int.Parse(customer.User.Id),
+            UserID = customer.User.Id,
             Name = customer.User.UserName ?? "User",
             Email = customer.User.Email ?? "",
             Phone = customer.User.PhoneNumber ?? "",
@@ -243,7 +243,7 @@ public class ProfileController : ControllerBase
             .Include(c => c.User)
             .Select(c => new UserInfoDto
             {
-                UserID = int.Parse(c.User.Id),
+                UserID = c.User.Id,
                 Name = c.User.UserName ?? "",
                 Email = c.User.Email ?? "",
                 Phone = c.User.PhoneNumber ?? "",
@@ -301,8 +301,8 @@ public class ProfileController : ControllerBase
 
         var profile = new EmployeeProfileDto
         {
-            EmployeeID = int.Parse(employee.User.Id),
-            UserID = int.Parse(employee.User.Id),
+            EmployeeID = employee.User.Id,
+            UserID = employee.User.Id,
             Name = employee.User.UserName ?? "",
             Email = employee.User.Email ?? "",
             Phone = employee.User.PhoneNumber ?? "",
@@ -352,7 +352,7 @@ public class ProfileController : ControllerBase
             .Include(e => e.AssignedAppointments)
             .Select(e => new
             {
-                EmployeeID = int.Parse(e.User.Id),
+                EmployeeID = e.User.Id,
                 Name = e.User.UserName,
                 Email = e.User.Email,
                 Phone = e.User.PhoneNumber,
