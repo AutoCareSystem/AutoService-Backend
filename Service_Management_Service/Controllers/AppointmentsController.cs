@@ -511,6 +511,90 @@ public class AppointmentsController : ControllerBase
         return Ok(result);
     }
 
+    [HttpGet("customer/{customerId}/vehicle/{vehicleId}/history")]
+    public async Task<ActionResult<IEnumerable<ServiceHistoryItemDto>>> GetVehicleServiceHistory(
+    string customerId,
+    int vehicleId)
+    {
+        // === 1. Validate Vehicle Ownership ===
+        var vehicleExists = await _context.Vehicles
+            .AnyAsync(v => v.VehicleID == vehicleId && v.CustomerID == customerId);
+
+        if (!vehicleExists)
+            return NotFound("Vehicle not found or does not belong to the customer.");
+
+        // === 2. Fetch Appointments (EF Core safe) ===
+        var appointments = await _context.Appointments
+            .Where(a => a.CustomerID == customerId &&
+                        a.VehicleID == vehicleId &&
+                        a.AppointmentType == "Service")
+            .Include(a => a.ServiceDetails!)
+                .ThenInclude(sd => sd!.ServicePackage!)
+                .ThenInclude(p => p!.Items!)
+                .ThenInclude(i => i!.Service)
+            .Include(a => a.AppointmentServices!)
+                .ThenInclude(aps => aps!.Service)
+            .ToListAsync();
+
+        var history = new List<ServiceHistoryItemDto>();
+
+        foreach (var appt in appointments)
+        {
+            // === Determine EndDate or Message ===
+            string endDateDisplay;
+            if (appt.Status == "Completed")
+            {
+                endDateDisplay = (appt.EndDate ?? appt.StartDate.Add(appt.Time))
+                    .ToString("yyyy-MM-dd HH:mm");
+            }
+            else
+            {
+                endDateDisplay = "Not completed yet";
+            }
+
+            // === FULL / HALF PACKAGE ===
+            if (appt.ServiceDetails?.ServiceOption is "Full" or "Half")
+            {
+                if (appt.ServiceDetails.ServicePackage?.Items != null)
+                {
+                    foreach (var item in appt.ServiceDetails.ServicePackage.Items)
+                    {
+                        history.Add(new ServiceHistoryItemDto
+                        {
+                            Title = item.Service.Title,
+                            Status = appt.Status,
+                            Price = item.Service.Price,
+                            EndDateDisplay = endDateDisplay
+                        });
+                    }
+                }
+            }
+            // === CUSTOM SERVICES ===
+            else if (appt.ServiceDetails?.ServiceOption == "Custom")
+            {
+                foreach (var aps in appt.AppointmentServices)
+                {
+                    history.Add(new ServiceHistoryItemDto
+                    {
+                        Title = aps.Service.Title,
+                        Status = appt.Status,
+                        Price = aps.CustomPrice ?? aps.Service.Price,
+                        EndDateDisplay = endDateDisplay
+                    });
+                }
+            }
+        }
+
+        // === 3. Sort: Pending first, then by EndDate (or default) ===
+        var sortedHistory = history
+            .OrderBy(h => h.Status == "Pending" ? 0 : 1)
+            .ThenByDescending(h => h.EndDateDisplay == "Not completed yet" ? DateTime.MinValue :
+                DateTime.ParseExact(h.EndDateDisplay, "yyyy-MM-dd HH:mm", null))
+            .ToList();
+
+        return Ok(sortedHistory);
+    }
+
     // Helper: Count services in an appointment (ServicePackage or Custom)
     private int CountServicesInAppointment(Appointment appt)
     {
