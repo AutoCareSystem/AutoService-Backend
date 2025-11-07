@@ -1,38 +1,40 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using backend_EAD.Models;
 
-namespace backend_EAD.Models;
-
-[Table("Appointments")]
-public class Appointment
+namespace backend_EAD.Models
 {
-    [Key]
-    public int AppointmentID { get; set; }
+    [Table("Appointments")]
+    public class Appointment
+    {
+        [Key]
+        public int AppointmentID { get; set; }
 
-    public int CustomerID { get; set; }
-    public Customer Customer { get; set; } = null!;
+        public string CustomerID { get; set; } = null!;
+        public Customer Customer { get; set; } = null!;
 
-    public int VehicleID { get; set; }
-    public Vehicle Vehicle { get; set; } = null!;
+        public int VehicleID { get; set; }
+        public Vehicle Vehicle { get; set; } = null!;
 
-    public int? EmployeeID { get; set; }
-    public Employee? Employee { get; set; }
+        public string? EmployeeID { get; set; }
+        public Employee? Employee { get; set; }
 
-    public DateTime StartDate { get; set; }
-    public TimeSpan Time { get; set; }
-    public DateTime? EndDate { get; set; }
+        public DateTime StartDate { get; set; }
 
-    [MaxLength(50)]
-    public string Status { get; set; } = "Pending"; // Pending, Confirmed, In Progress, Completed, Cancelled
+        public TimeSpan Time { get; set; }
 
-    [MaxLength(20)]
-    public string AppointmentType { get; set; } = null!; // "Service" or "Project"
+        public DateTime? EndDate { get; set; }
 
-    public decimal? TotalPrice { get; set; }
+        public string Status { get; set; } = "Pending"; // Pending, Confirmed, In Progress, Completed, Cancelled
 
-    // Composition
-    public ServiceAppointment? ServiceDetails { get; set; }
-    public ProjectAppointment? ProjectDetails { get; set; }
+        public string AppointmentType { get; set; } = null!; // "Service" or "Project"
 
-    public ICollection<AppointmentService> AppointmentServices { get; set; } = new List<AppointmentService>();
+        public decimal? TotalPrice { get; set; }
+
+        // Composition
+        public ServiceAppointment? ServiceDetails { get; set; }
+        public ProjectAppointment? ProjectDetails { get; set; }
+
+        public ICollection<AppointmentService> AppointmentServices { get; set; } = new List<AppointmentService>();
+    }
 }

@@ -1,7 +1,7 @@
 ### Customer Profile Management API Testing
 
 ### Variables
-@baseUrl = http://localhost:5000
+@baseUrl = http://localhost:5093
 @token = your_jwt_token_here
 @userId = 1
 

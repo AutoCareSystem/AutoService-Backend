@@ -1,21 +1,26 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.AspNetCore.Identity;
 
-namespace backend_EAD.Models;
-
-[Table("Employees")]
-public class Employee
+namespace backend_EAD.Models
 {
-    [Key, ForeignKey(nameof(User))]
-    public int UserID { get; set; }
+    [Table("Employees")]
+    public class Employee
+    {
+        [Key, ForeignKey(nameof(User))]
+        public string UserID { get; set; } = null!;  // Now string to match AppUser.Id
 
-    public User User { get; set; } = null!;
+        public AppUser User { get; set; } = null!;
 
-    [Required, MaxLength(100)]
-    public string Position { get; set; } = null!;
+        [Required, MaxLength(50)]
+        public string EmpNo { get; set; } = null!;
 
-    public decimal HourlyRate { get; set; }
+        [Required, MaxLength(50)]
+        public string Position { get; set; } = null!;
 
-    // Navigations
-    public ICollection<Appointment> Appointments { get; set; } = new List<Appointment>();
+        public bool IsActive { get; set; } = true;
+
+        // Navigations
+        public ICollection<Appointment> AssignedAppointments { get; set; } = new List<Appointment>();
+    }
 }

@@ -1,4 +1,4 @@
-﻿// Controllers/ProjectsController.cs
+// Controllers/ProjectsController.cs
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Service_Management_Service.Data;
@@ -29,6 +29,7 @@ public class ProjectsController : ControllerBase
             .Include(a => a.Employee).ThenInclude(e => e.User)
             .Include(a => a.ProjectDetails)
             .OrderByDescending(a => a.StartDate)
+            .ThenBy(a => a.Time)
             .ToListAsync();
 
         return Ok(projects);
@@ -82,13 +83,15 @@ public class ProjectsController : ControllerBase
         project.ProjectDetails.ProjectTitle = dto.ProjectTitle;
         project.ProjectDetails.ProjectDescription = dto.ProjectDescription;
 
-        // === Optional: Update assigned employee ===
-        if (dto.EmployeeID.HasValue)
+        // === Optional: Update assigned employee (string GUID) ===
+        if (!string.IsNullOrWhiteSpace(dto.EmployeeID))
         {
             var employee = await _context.Employees
                 .FirstOrDefaultAsync(e => e.UserID == dto.EmployeeID && e.IsActive);
+
             if (employee == null)
                 return BadRequest("Assigned employee not found or inactive.");
+
             project.EmployeeID = dto.EmployeeID;
         }
 
@@ -119,7 +122,6 @@ public class ProjectsController : ControllerBase
 
         _context.Appointments.Remove(project);
         await _context.SaveChangesAsync();
-
         return NoContent();
     }
 }

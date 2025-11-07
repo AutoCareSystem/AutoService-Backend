@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace backend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251105085129_AddServiceManagementTables")]
-    partial class AddServiceManagementTables
+    [Migration("20251106165253_UpdateModelsvvv")]
+    partial class UpdateModelsvvv
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -238,14 +238,14 @@ namespace backend.Migrations
 
                     b.Property<string>("AppointmentType")
                         .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
+                        .HasColumnType("text");
 
-                    b.Property<int>("CustomerID")
-                        .HasColumnType("integer");
+                    b.Property<string>("CustomerID")
+                        .IsRequired()
+                        .HasColumnType("text");
 
-                    b.Property<int?>("EmployeeID")
-                        .HasColumnType("integer");
+                    b.Property<string>("EmployeeID")
+                        .HasColumnType("text");
 
                     b.Property<DateTime?>("EndDate")
                         .HasColumnType("timestamp with time zone");
@@ -255,8 +255,7 @@ namespace backend.Migrations
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                        .HasColumnType("text");
 
                     b.Property<TimeSpan>("Time")
                         .HasColumnType("interval");
@@ -289,10 +288,7 @@ namespace backend.Migrations
                     b.Property<int>("AppointmentID")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("Duration")
-                        .HasColumnType("integer");
-
-                    b.Property<decimal?>("Price")
+                    b.Property<decimal?>("CustomPrice")
                         .HasColumnType("numeric");
 
                     b.Property<int>("ServiceID")
@@ -309,8 +305,8 @@ namespace backend.Migrations
 
             modelBuilder.Entity("backend_EAD.Models.Customer", b =>
                 {
-                    b.Property<int>("UserID")
-                        .HasColumnType("integer");
+                    b.Property<string>("UserID")
+                        .HasColumnType("text");
 
                     b.Property<string>("Address")
                         .HasMaxLength(200)
@@ -326,16 +322,21 @@ namespace backend.Migrations
 
             modelBuilder.Entity("backend_EAD.Models.Employee", b =>
                 {
-                    b.Property<int>("UserID")
-                        .HasColumnType("integer");
+                    b.Property<string>("UserID")
+                        .HasColumnType("text");
 
-                    b.Property<decimal>("HourlyRate")
-                        .HasColumnType("numeric");
+                    b.Property<string>("EmpNo")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("Position")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.HasKey("UserID");
 
@@ -433,43 +434,68 @@ namespace backend.Migrations
 
                     b.Property<string>("ServiceOption")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                        .HasColumnType("text");
 
                     b.Property<int?>("ServicePackageID")
                         .HasColumnType("integer");
 
                     b.HasKey("AppointmentID");
 
+                    b.HasIndex("ServicePackageID");
+
                     b.ToTable("ServiceAppointments");
                 });
 
-            modelBuilder.Entity("backend_EAD.Models.User", b =>
+            modelBuilder.Entity("backend_EAD.Models.ServicePackage", b =>
                 {
-                    b.Property<int>("UserID")
+                    b.Property<int>("ServicePackageID")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("UserID"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ServicePackageID"));
 
-                    b.Property<string>("Email")
+                    b.Property<string>("Description")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("text");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
-                    b.Property<string>("Phone")
+                    b.Property<string>("PackageType")
                         .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
+                        .HasColumnType("text");
 
-                    b.HasKey("UserID");
+                    b.Property<decimal>("Price")
+                        .HasColumnType("numeric");
 
-                    b.ToTable("Users");
+                    b.HasKey("ServicePackageID");
+
+                    b.ToTable("ServicePackages");
+                });
+
+            modelBuilder.Entity("backend_EAD.Models.ServicePackageItem", b =>
+                {
+                    b.Property<int>("ServicePackageItemID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ServicePackageItemID"));
+
+                    b.Property<int>("ServiceID")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ServicePackageID")
+                        .HasColumnType("integer");
+
+                    b.HasKey("ServicePackageItemID");
+
+                    b.HasIndex("ServiceID");
+
+                    b.HasIndex("ServicePackageID");
+
+                    b.ToTable("ServicePackageItems");
                 });
 
             modelBuilder.Entity("backend_EAD.Models.Vehicle", b =>
@@ -481,31 +507,27 @@ namespace backend.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("VehicleID"));
 
                     b.Property<string>("Company")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("text");
 
-                    b.Property<int>("CustomerID")
-                        .HasColumnType("integer");
+                    b.Property<string>("CustomerID")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<string>("Model")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("text");
 
                     b.Property<string>("PlateNumber")
                         .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
+                        .HasColumnType("text");
 
                     b.Property<string>("Vin")
                         .IsRequired()
-                        .HasMaxLength(17)
-                        .HasColumnType("character varying(17)");
+                        .HasColumnType("text");
 
                     b.Property<string>("Year")
                         .IsRequired()
-                        .HasMaxLength(4)
-                        .HasColumnType("character varying(4)");
+                        .HasColumnType("text");
 
                     b.HasKey("VehicleID");
 
@@ -574,7 +596,7 @@ namespace backend.Migrations
                         .IsRequired();
 
                     b.HasOne("backend_EAD.Models.Employee", "Employee")
-                        .WithMany("Appointments")
+                        .WithMany("AssignedAppointments")
                         .HasForeignKey("EmployeeID");
 
                     b.HasOne("backend_EAD.Models.Vehicle", "Vehicle")
@@ -611,7 +633,7 @@ namespace backend.Migrations
 
             modelBuilder.Entity("backend_EAD.Models.Customer", b =>
                 {
-                    b.HasOne("backend_EAD.Models.User", "User")
+                    b.HasOne("backend_EAD.Models.AppUser", "User")
                         .WithMany()
                         .HasForeignKey("UserID")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -622,7 +644,7 @@ namespace backend.Migrations
 
             modelBuilder.Entity("backend_EAD.Models.Employee", b =>
                 {
-                    b.HasOne("backend_EAD.Models.User", "User")
+                    b.HasOne("backend_EAD.Models.AppUser", "User")
                         .WithMany()
                         .HasForeignKey("UserID")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -661,7 +683,32 @@ namespace backend.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("backend_EAD.Models.ServicePackage", "ServicePackage")
+                        .WithMany()
+                        .HasForeignKey("ServicePackageID");
+
                     b.Navigation("Appointment");
+
+                    b.Navigation("ServicePackage");
+                });
+
+            modelBuilder.Entity("backend_EAD.Models.ServicePackageItem", b =>
+                {
+                    b.HasOne("backend_EAD.Models.Service", "Service")
+                        .WithMany()
+                        .HasForeignKey("ServiceID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("backend_EAD.Models.ServicePackage", "Package")
+                        .WithMany("Items")
+                        .HasForeignKey("ServicePackageID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Package");
+
+                    b.Navigation("Service");
                 });
 
             modelBuilder.Entity("backend_EAD.Models.Vehicle", b =>
@@ -693,7 +740,12 @@ namespace backend.Migrations
 
             modelBuilder.Entity("backend_EAD.Models.Employee", b =>
                 {
-                    b.Navigation("Appointments");
+                    b.Navigation("AssignedAppointments");
+                });
+
+            modelBuilder.Entity("backend_EAD.Models.ServicePackage", b =>
+                {
+                    b.Navigation("Items");
                 });
 #pragma warning restore 612, 618
         }

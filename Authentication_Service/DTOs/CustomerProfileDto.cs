@@ -15,7 +15,7 @@ public class CustomerProfileDto
 // User Information Section
 public class UserInfoDto
 {
-    public int UserID { get; set; }
+    public string UserID { get; set; } = null!;
     public string Name { get; set; } = null!;
     public string Email { get; set; } = null!;
     public string Phone { get; set; } = null!;
@@ -113,8 +113,8 @@ public class UpdateVehicleDto
 // Employee Profile Response DTO
 public class EmployeeProfileDto
 {
-    public int EmployeeID { get; set; }
-    public int UserID { get; set; }
+    public string EmployeeID { get; set; } = null!;
+    public string UserID { get; set; } = null!;
     public string Name { get; set; } = null!;
     public string Email { get; set; } = null!;
     public string Phone { get; set; } = null!;
