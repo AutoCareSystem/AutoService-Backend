@@ -13,8 +13,8 @@ namespace Service_Management_Service.Models
         public string CustomerID { get; set; } = null!;
         public Customer Customer { get; set; } = null!;
 
-        public int VehicleID { get; set; }
-        public Vehicle Vehicle { get; set; } = null!;
+        public int? VehicleID { get; set; }
+        public Vehicle Vehicle { get; set; }
 
         public string? EmployeeID { get; set; }
         public Employee? Employee { get; set; }

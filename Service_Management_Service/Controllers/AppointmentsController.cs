@@ -1,4 +1,4 @@
-// Controllers/AppointmentsController.cs
+﻿// Controllers/AppointmentsController.cs
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Service_Management_Service.Data;
@@ -32,11 +32,27 @@ public class AppointmentsController : ControllerBase
         if (customer == null)
             return NotFound($"Customer with ID {dto.CustomerID} not found.");
 
-        // === 3. Validate Vehicle ===
-        var vehicle = await _context.Vehicles
-            .FirstOrDefaultAsync(v => v.VehicleID == dto.VehicleID && v.CustomerID == dto.CustomerID);
-        if (vehicle == null)
-            return BadRequest("Vehicle not found or does not belong to the customer.");
+        // === 3. Vehicle optional check - ONLY validate if VehicleID is provided ===
+        Vehicle? vehicle = null;
+        if (dto.VehicleID.HasValue && dto.VehicleID.Value > 0)
+        {
+            vehicle = await _context.Vehicles
+                .FirstOrDefaultAsync(v => v.VehicleID == dto.VehicleID && v.CustomerID == dto.CustomerID);
+
+            if (vehicle == null)
+            {
+                
+                if (dto.AppointmentType == "Service")
+                {
+                    dto.VehicleID = null;  // Clear invalid vehicle ID
+                }
+                else
+                {
+                    // For Project or other types, vehicle might be required
+                    return BadRequest("Vehicle not found or does not belong to the customer.");
+                }
+            }
+        }
 
         // === 4. Validate Employee (if provided) ===
         if (!string.IsNullOrWhiteSpace(dto.EmployeeID))
@@ -56,7 +72,7 @@ public class AppointmentsController : ControllerBase
         var appointment = new Appointment
         {
             CustomerID = dto.CustomerID,
-            VehicleID = dto.VehicleID,
+            VehicleID = dto.VehicleID, // can be null
             EmployeeID = dto.EmployeeID,
             StartDate = dto.StartDate.Date,
             Time = dto.Time,
@@ -98,6 +114,8 @@ public class AppointmentsController : ControllerBase
                 appointment.ServiceDetails.ServicePackageID = package.ServicePackageID;
                 appointment.TotalPrice = package.Price;
             }
+
+
             // --- Custom: Use AppointmentServices ---
             else if (dto.ServiceOption == "Custom")
             {
@@ -155,9 +173,12 @@ public class AppointmentsController : ControllerBase
                 .Include(c => c.User)
                 .LoadAsync();
 
-            await _context.Entry(appointment)
-                .Reference(a => a.Vehicle)
-                .LoadAsync();
+            if (appointment.VehicleID.HasValue)
+            {
+                await _context.Entry(appointment)
+                    .Reference(a => a.Vehicle)
+                    .LoadAsync();
+            }
 
             if (!string.IsNullOrWhiteSpace(appointment.EmployeeID))
             {
@@ -202,6 +223,25 @@ public class AppointmentsController : ControllerBase
         }
     }
 
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<Appointment>>> GetAppointments()
+    {
+        var appointments = await _context.Appointments
+            .Include(a => a.Customer).ThenInclude(c => c.User)
+            .Include(a => a.Employee).ThenInclude(e => e.User)
+            .Include(a => a.Vehicle)
+            .Include(a => a.ServiceDetails)
+                .ThenInclude(sd => sd.ServicePackage)
+                    .ThenInclude(sp => sp.Items)
+                        .ThenInclude(i => i.Service)
+            .Include(a => a.ProjectDetails)
+            .Include(a => a.AppointmentServices)
+                .ThenInclude(aps => aps.Service)
+            .ToListAsync();
+
+        return Ok(appointments);
+    }
+
     [HttpGet("{id}")]
     public async Task<ActionResult<Appointment>> GetAppointment(int id)
     {
@@ -215,303 +255,61 @@ public class AppointmentsController : ControllerBase
         return Ok(appointment);
     }
 
-    // GET: api/appointments?status=Pending&type=Service&employeeId=f003b7d9-eefe-4cb6-8f87-06ff62c54d8a
-    [HttpGet]
-    public async Task<ActionResult<IEnumerable<Appointment>>> GetAppointments(
-        [FromQuery] string? status,
-        [FromQuery] string? type,
-        [FromQuery] string? employeeId)
+    [HttpGet("customer/{customerID}")]
+    public async Task<ActionResult<IEnumerable<Appointment>>> GetCustomerAppointments(string customerID)
     {
-        var query = _context.Appointments
+        var appointments = await _context.Appointments
             .Include(a => a.Customer).ThenInclude(c => c.User)
-            .Include(a => a.Vehicle)
             .Include(a => a.Employee).ThenInclude(e => e.User)
+            .Include(a => a.Vehicle)
             .Include(a => a.ServiceDetails)
-                .ThenInclude(s => s.ServicePackage)
-                .ThenInclude(p => p.Items)
-                .ThenInclude(i => i.Service)
+                .ThenInclude(sd => sd.ServicePackage)
+                    .ThenInclude(sp => sp.Items)
+                        .ThenInclude(i => i.Service)
             .Include(a => a.ProjectDetails)
             .Include(a => a.AppointmentServices)
                 .ThenInclude(aps => aps.Service)
-            .AsQueryable();
+            .Where(a => a.CustomerID == customerID)
+            .ToListAsync();
 
-        // === FILTER: Status (case-insensitive) ===
-        if (!string.IsNullOrWhiteSpace(status))
-        {
-            var statusNorm = status.Trim().ToLower();
-            query = query.Where(a => a.Status != null && a.Status.ToLower() == statusNorm);
-        }
-
-        // === FILTER: AppointmentType (validated & case-insensitive) ===
-        if (!string.IsNullOrWhiteSpace(type))
-        {
-            var typeNorm = type.Trim().ToLower();
-            if (!new[] { "service", "project" }.Contains(typeNorm))
-                return BadRequest("Invalid type. Must be 'Service' or 'Project'.");
-
-            query = query.Where(a => a.AppointmentType.ToLower() == typeNorm);
-        }
-
-        // === FILTER: EmployeeID (string GUID, only if assigned) ===
-        if (!string.IsNullOrWhiteSpace(employeeId))
-        {
-            query = query.Where(a => a.EmployeeID == employeeId);
-        }
-
-        // === ORDERING: StartDate  Time ===
-        query = query
-            .OrderBy(a => a.StartDate)
-            .ThenBy(a => a.Time);
-
-        // === EXECUTE ===
-        var appointments = await query.ToListAsync();
         return Ok(appointments);
     }
 
-    // GET: api/appointments/customer/f003b7d9-eefe-4cb6-8f87-06ff62c54d8a/vehicle/8/summary
-    [HttpGet("customer/{customerId}/vehicle/{vehicleId}/summary")]
-    public async Task<ActionResult<CustomerVehicleSummaryDto>> GetCustomerVehicleSummary(
-        string customerId,
-        int vehicleId)
+    [HttpGet("customer/{customerID}/vehicle/{vehicleID}")]
+    public async Task<ActionResult<IEnumerable<Appointment>>> GetCustomerVehicleAppointments(
+        string customerID,
+        int vehicleID)
     {
-        // === 1. Validate: Vehicle exists and belongs to Customer ===
-        var vehicle = await _context.Vehicles
-            .FirstOrDefaultAsync(v => v.VehicleID == vehicleId && v.CustomerID == customerId);
-
-        if (vehicle == null)
-            return NotFound("Vehicle not found or does not belong to the customer.");
-
-        // === 2. Count total vehicles owned by the customer ===
-        var totalVehicles = await _context.Vehicles
-            .CountAsync(v => v.CustomerID == customerId);
-
-        // === 3. Fetch all appointments for this vehicle ===
         var appointments = await _context.Appointments
-            .Where(a => a.CustomerID == customerId && a.VehicleID == vehicleId)
+            .Include(a => a.Customer).ThenInclude(c => c.User)
+            .Include(a => a.Employee).ThenInclude(e => e.User)
+            .Include(a => a.Vehicle)
             .Include(a => a.ServiceDetails)
-                .ThenInclude(s => s.ServicePackage)
-                .ThenInclude(p => p.Items)
-                .ThenInclude(i => i.Service)
+                .ThenInclude(sd => sd.ServicePackage)
+                    .ThenInclude(sp => sp.Items)
+                        .ThenInclude(i => i.Service)
             .Include(a => a.ProjectDetails)
             .Include(a => a.AppointmentServices)
                 .ThenInclude(aps => aps.Service)
-            .Include(a => a.Employee)
-                .ThenInclude(e => e.User)
+            .Where(a => a.CustomerID == customerID && a.VehicleID == vehicleID)
             .ToListAsync();
 
-        // === 4. Initialize result ===
-        var result = new CustomerVehicleSummaryDto
-        {
-            TotalVehicles = totalVehicles
-        };
-
-        // === 5. Calculate stats from appointments ===
-        foreach (var appt in appointments)
-        {
-            // TOTAL SPENT (only Completed)
-            if (appt.Status == "Completed" && appt.TotalPrice.HasValue)
-            {
-                result.TotalSpent += appt.TotalPrice.Value;
-            }
-
-            // COMPLETED & PENDING SERVICE COUNTS
-            int serviceCount = CountServicesInAppointment(appt);
-
-            if (appt.Status == "Completed")
-            {
-                result.CompletedCount += serviceCount;
-            }
-            else if (appt.Status is "Pending" or "Accepted")
-            {
-                result.PendingCount += serviceCount;
-            }
-        }
-
-        return Ok(result);
+        return Ok(appointments);
     }
 
-    // PUT: api/appointments/123/accept
-    [HttpPut("{id}/accept")]
-    public async Task<IActionResult> AcceptAppointment(int id, [FromBody] AcceptAppointmentDto dto)
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteAppointment(int id)
     {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
-
-        // === 1. Load appointment with Employee ===
-        var appointment = await _context.Appointments
-            .Include(a => a.Employee)
-            .FirstOrDefaultAsync(a => a.AppointmentID == id);
+        var appointment = await _context.Appointments.FindAsync(id);
 
         if (appointment == null)
-            return NotFound("Appointment not found.");
+            return NotFound($"Appointment with ID {id} not found.");
 
-        // === 2. Check if already assigned ===
-        if (!string.IsNullOrWhiteSpace(appointment.EmployeeID))
-            return BadRequest("Appointment is already assigned.");
+        _context.Appointments.Remove(appointment);
+        await _context.SaveChangesAsync();
 
-        // === 3. Only allow Pending appointments ===
-        if (appointment.Status != "Pending")
-            return BadRequest("Only Pending appointments can be accepted.");
-
-        // === 4. Validate Employee (active & exists) ===
-        var employee = await _context.Employees
-            .FirstOrDefaultAsync(e => e.UserID == dto.EmployeeID && e.IsActive);
-
-        if (employee == null)
-            return BadRequest("Invalid or inactive employee.");
-
-        // === 5. Update Appointment ===
-        appointment.EmployeeID = dto.EmployeeID;
-        appointment.Status = "Approved";
-
-        try
-        {
-            await _context.SaveChangesAsync();
-            return Ok(new
-            {
-                message = "Appointment accepted.",
-                status = "Approved",
-                employeeId = dto.EmployeeID
-            });
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, $"Error: {ex.Message}");
-        }
+        return NoContent();
     }
-
-    // PUT: api/appointments/123/complete
-    [HttpPut("{id}/complete")]
-    public async Task<IActionResult> CompleteAppointment(int id, [FromBody] CompleteAppointmentDto dto)
-    {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
-
-        // === 1. Load appointment with Employee ===
-        var appointment = await _context.Appointments
-            .Include(a => a.Employee)
-                .ThenInclude(e => e.User)
-            .FirstOrDefaultAsync(a => a.AppointmentID == id);
-
-        if (appointment == null)
-            return NotFound("Appointment not found.");
-
-        // === 2. Must be assigned ===
-        if (string.IsNullOrWhiteSpace(appointment.EmployeeID))
-            return BadRequest("Appointment must be assigned to an employee.");
-
-        // === 3. Employee must match ===
-        if (appointment.EmployeeID != dto.EmployeeID)
-            return Forbid("You can only complete your own appointments.");
-
-        // === 4. Status checks ===
-        if (appointment.Status == "Completed")
-            return BadRequest("Appointment is already completed.");
-
-        if (appointment.Status != "Approved")
-            return BadRequest("Only Approved appointments can be completed.");
-
-        // === 5. Mark as Completed ===
-        appointment.Status = "Completed";
-
-        try
-        {
-            await _context.SaveChangesAsync();
-            return Ok(new
-            {
-                message = "Appointment completed.",
-                status = "Completed",
-                employeeId = dto.EmployeeID
-            });
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, $"Error: {ex.Message}");
-        }
-    }
-
-    [HttpGet("service")]
-    public async Task<ActionResult<IEnumerable<ServiceAppointmentDetailsDto>>> GetServiceAppointments(
-    [FromQuery] string? option = null,
-    [FromQuery] string? status = null)
-    {
-        var validOptions = new[] { "Full", "Half", "Custom" };
-
-        if (option != null && !validOptions.Contains(option, StringComparer.OrdinalIgnoreCase))
-            return BadRequest("Invalid option. Use: Full, Half, Custom, or leave empty for all.");
-
-        // === Base query: only Service appointments ===
-        var query = _context.Appointments
-            .Where(a => a.AppointmentType == "Service");
-
-        // === FILTER BY STATUS (DB-side, exact match) ===
-        if (!string.IsNullOrWhiteSpace(status))
-        {
-            query = query.Where(a => a.Status == status);
-        }
-
-        // === LOAD DATA (no case-insensitive string filter yet) ===
-        var appointments = await query
-            .Include(a => a.Customer).ThenInclude(c => c.User)
-            .Include(a => a.Vehicle)
-            .Include(a => a.Employee).ThenInclude(e => e.User)
-            .Include(a => a.ServiceDetails)
-                .ThenInclude(sd => sd.ServicePackage)
-                .ThenInclude(p => p!.Items)
-                .ThenInclude(i => i.Service)
-            .Include(a => a.AppointmentServices)
-                .ThenInclude(aps => aps.Service)
-            .OrderByDescending(a => a.StartDate)
-            .ThenBy(a => a.Time)
-            .ToListAsync();
-
-        // === APPLY CASE-INSENSITIVE OPTION FILTER IN MEMORY ===
-        if (!string.IsNullOrWhiteSpace(option))
-        {
-            var opt = option.Trim();
-            appointments = appointments
-                .Where(a => a.ServiceDetails != null &&
-                            string.Equals(a.ServiceDetails.ServiceOption, opt, StringComparison.OrdinalIgnoreCase))
-                .ToList();
-        }
-
-        // === MAP TO DTO ===
-        var result = appointments.Select(a => new ServiceAppointmentDetailsDto
-        {
-            AppointmentID = a.AppointmentID,
-            CustomerName = a.Customer.User.UserName,
-            CustomerEmail = a.Customer.User.Email ?? "N/A",
-            VehicleInfo = $"{a.Vehicle.Company} {a.Vehicle.Model} ({a.Vehicle.Year}) - {a.Vehicle.PlateNumber}",
-            StartDate = a.StartDate,
-            Time = a.Time,
-            Status = a.Status,
-            EmployeeName = a.Employee?.User?.UserName ?? "Not Assigned",
-            ServiceOption = a.ServiceDetails?.ServiceOption ?? "Unknown",
-            TotalPrice = a.TotalPrice ?? 0m,
-
-            PackageName = a.ServiceDetails?.ServicePackage?.Name,
-            PackageType = a.ServiceDetails?.ServicePackage?.PackageType,
-            PackageServices = a.ServiceDetails?.ServicePackage?.Items?
-                .Select(i => new ServiceItemDto
-                {
-                    Title = i.Service.Title,
-                    Price = i.Service.Price
-                })
-                .ToList() ?? new List<ServiceItemDto>(),
-
-            CustomServices = a.AppointmentServices?
-                .Select(aps => new ServiceItemDto
-                {
-                    Title = aps.Service.Title,
-                    Price = aps.CustomPrice ?? aps.Service.Price
-                })
-                .ToList() ?? new List<ServiceItemDto>()
-        }).ToList();
-
-        return Ok(result);
-    }
-
-    // Helper: Count services in an appointment (ServicePackage or Custom)
     private int CountServicesInAppointment(Appointment appt)
     {
         if (appt.ServiceDetails?.ServicePackage != null)
@@ -524,5 +322,4 @@ public class AppointmentsController : ControllerBase
         }
         return 0;
     }
-
 }

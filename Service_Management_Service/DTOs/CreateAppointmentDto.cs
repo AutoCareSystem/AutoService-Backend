@@ -3,7 +3,7 @@ namespace Service_Management_Service.DTOs
     public class CreateAppointmentDto
     {
         public string CustomerID { get; set; } = null!;
-        public int VehicleID { get; set; }
+        public int? VehicleID { get; set; }
         public DateTime StartDate { get; set; }
         public TimeSpan Time { get; set; }
         public DateTime? EndDate { get; set; }
