@@ -1,0 +1,256 @@
+### =====================================================
+### Customer Vehicle Management API Tests
+### Base URL: http://localhost:5093
+### =====================================================
+
+### Variables
+@baseUrl = http://localhost:5093
+@token = YOUR_ACCESS_TOKEN_HERE
+@adminToken = YOUR_ADMIN_OR_EMPLOYEE_TOKEN_HERE
+@vehicleId = 1
+@userId = USER_ID_HERE
+
+### =====================================================
+### STEP 1: Register a new customer (if needed)
+### =====================================================
+POST {{baseUrl}}/api/Auth/register
+Content-Type: application/json
+
+{
+  "email": "customer@example.com",
+  "password": "Password123!",
+  "role": "Customer"
+}
+
+### =====================================================
+### STEP 2: Login to get access token
+### =====================================================
+POST {{baseUrl}}/api/Auth/login
+Content-Type: application/json
+
+{
+  "email": "customer@example.com",
+  "password": "Password123!"
+}
+
+### Copy the accessToken from the response above and set it in @token variable
+
+### =====================================================
+### STEP 3: Register/Login as Admin or Employee (for testing admin endpoints)
+### =====================================================
+POST {{baseUrl}}/api/Auth/register
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "Admin123!",
+  "role": "Admin"
+}
+
+### Login as Admin/Employee
+POST {{baseUrl}}/api/Auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "Admin123!"
+}
+
+### Copy the accessToken and set it in @adminToken variable
+
+### =====================================================
+### CUSTOMER ENDPOINTS (Require Customer Role)
+### =====================================================
+
+### GET ALL VEHICLES - Get all vehicles for logged-in customer
+### =====================================================
+GET {{baseUrl}}/api/Vehicles
+Authorization: Bearer {{token}}
+
+### =====================================================
+### GET VEHICLE BY ID - Get specific vehicle details
+### =====================================================
+GET {{baseUrl}}/api/Vehicles/{{vehicleId}}
+Authorization: Bearer {{token}}
+
+### =====================================================
+### ADD VEHICLE - Add a new vehicle to customer profile
+### =====================================================
+POST {{baseUrl}}/api/Vehicles
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "model": "Axio",
+  "year": "2017",
+  "vin": "1HGBH41JXMN109186",
+  "plateNumber": "CAC-4455",
+  "company": "Toyota"
+}
+
+### =====================================================
+### ADD ANOTHER VEHICLE - Add second vehicle
+### =====================================================
+POST {{baseUrl}}/api/Vehicles
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "model": "Civic",
+  "year": "2020",
+  "vin": "2HGFC2F59LH123456",
+  "plateNumber": "ABC-1234",
+  "company": "Honda"
+}
+
+### =====================================================
+### ADD VEHICLE - Add a BMW
+### =====================================================
+POST {{baseUrl}}/api/Vehicles
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "model": "X5",
+  "year": "2022",
+  "vin": "5UXCR6C0XN9L12345",
+  "plateNumber": "BMW-7890",
+  "company": "BMW"
+}
+
+### =====================================================
+### ADD VEHICLE WITHOUT COMPANY (optional field)
+### =====================================================
+POST {{baseUrl}}/api/Vehicles
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "model": "Alto",
+  "year": "2019",
+  "vin": "9BWZZZ377VT004251",
+  "plateNumber": "XYZ-5678"
+}
+
+### =====================================================
+### DELETE VEHICLE - Delete a specific vehicle
+### =====================================================
+DELETE {{baseUrl}}/api/Vehicles/{{vehicleId}}
+Authorization: Bearer {{token}}
+
+### =====================================================
+### ERROR CASES
+### =====================================================
+
+### Try to add vehicle with duplicate VIN (should fail)
+POST {{baseUrl}}/api/Vehicles
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "model": "Duplicate",
+  "year": "2021",
+  "vin": "1HGBH41JXMN109186",
+  "plateNumber": "DUP-1111",
+  "company": "Test"
+}
+
+### Try to add vehicle with missing required fields (should fail)
+POST {{baseUrl}}/api/Vehicles
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "model": "Incomplete",
+  "year": "2021"
+}
+
+### Try to access without token (should fail with 401)
+GET {{baseUrl}}/api/Vehicles
+
+### Try to delete non-existent vehicle (should fail with 404)
+DELETE {{baseUrl}}/api/Vehicles/99999
+Authorization: Bearer {{token}}
+
+### =====================================================
+### ADMIN/EMPLOYEE ENDPOINTS (Access by User ID)
+### =====================================================
+
+### GET ALL VEHICLES IN SYSTEM - Admin/Employee can see all vehicles
+GET {{baseUrl}}/api/Vehicles/all
+Authorization: Bearer {{adminToken}}
+
+### GET ALL VEHICLES BY USER ID - Get all vehicles for a specific user
+GET {{baseUrl}}/api/Vehicles/user/{{userId}}
+Authorization: Bearer {{adminToken}}
+
+### GET SPECIFIC VEHICLE BY USER ID AND VEHICLE ID
+GET {{baseUrl}}/api/Vehicles/user/{{userId}}/{{vehicleId}}
+Authorization: Bearer {{adminToken}}
+
+### ADD VEHICLE FOR SPECIFIC USER - Admin adds vehicle for a customer
+POST {{baseUrl}}/api/Vehicles/user/{{userId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "model": "Mercedes S-Class",
+  "year": "2023",
+  "vin": "WDDUG8GB5NA123456",
+  "plateNumber": "ADMIN-001",
+  "company": "Mercedes-Benz"
+}
+
+### DELETE VEHICLE FOR SPECIFIC USER - Admin deletes vehicle for a customer
+DELETE {{baseUrl}}/api/Vehicles/user/{{userId}}/{{vehicleId}}
+Authorization: Bearer {{adminToken}}
+
+### =====================================================
+### ADMIN ENDPOINT ERROR CASES
+### =====================================================
+
+### Try to access user vehicles as Customer (should fail with 403)
+GET {{baseUrl}}/api/Vehicles/user/{{userId}}
+Authorization: Bearer {{token}}
+
+### Try to add vehicle for user as Customer (should fail with 403)
+POST {{baseUrl}}/api/Vehicles/user/{{userId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "model": "Test",
+  "year": "2023",
+  "vin": "TEST123456",
+  "plateNumber": "TEST-001"
+}
+
+### Try to access user vehicles without token (should fail with 401)
+GET {{baseUrl}}/api/Vehicles/user/{{userId}}
+
+### =====================================================
+### NOTES:
+### =====================================================
+### CUSTOMER ENDPOINTS (Role: Customer):
+### 1. GET /api/Vehicles - Get my vehicles
+### 2. GET /api/Vehicles/{vehicleId} - Get my specific vehicle
+### 3. POST /api/Vehicles - Add vehicle to my profile
+### 4. DELETE /api/Vehicles/{vehicleId} - Delete my vehicle
+###
+### ADMIN/EMPLOYEE ENDPOINTS (Role: Admin, Employee):
+### 5. GET /api/Vehicles/user/{userId} - Get all vehicles for a user
+### 6. GET /api/Vehicles/user/{userId}/{vehicleId} - Get specific vehicle for a user
+### 7. POST /api/Vehicles/user/{userId} - Add vehicle for a user
+### 8. DELETE /api/Vehicles/user/{userId}/{vehicleId} - Delete vehicle for a user
+###
+### GENERAL RULES:
+### 1. Customers can only manage their own vehicles
+### 2. Admin/Employee can manage vehicles for any user
+### 3. No one can edit vehicles, only add and delete them
+### 4. VIN must be unique across the entire system
+### 5. Plate number must be unique per customer
+### 6. Vehicles with existing appointments cannot be deleted
+### 7. Model, Year, VIN, and PlateNumber are required fields
+### 8. Company is optional
+### 9. VIN and PlateNumber are automatically converted to uppercase
+### =====================================================

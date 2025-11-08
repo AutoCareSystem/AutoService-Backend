@@ -79,4 +79,28 @@ namespace backend_EAD.DTOs
         public string PlateNumber { get; set; } = string.Empty;
         public string? Company { get; set; }
     }
+
+    /// <summary>
+    /// Add vehicle with CustomerID (for public API)
+    /// </summary>
+    public class AddVehicleWithCustomerDto
+    {
+        public string CustomerID { get; set; } = string.Empty;
+        public string Model { get; set; } = string.Empty;
+        public string Year { get; set; } = string.Empty;
+        public string Vin { get; set; } = string.Empty;
+        public string PlateNumber { get; set; } = string.Empty;
+        public string? Company { get; set; }
+    }
+
+    /// <summary>
+    /// Update vehicle details
+    /// </summary>
+    public class UpdateVehicleDto
+    {
+        public string? Model { get; set; }
+        public string? Year { get; set; }
+        public string? PlateNumber { get; set; }
+        public string? Company { get; set; }
+    }
 }
