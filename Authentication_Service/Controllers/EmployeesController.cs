@@ -98,8 +98,12 @@ namespace backend_EAD.Controllers
                 employee.User.PhoneNumber = dto.PhoneNumber;
 
             // Update Employee-specific fields
-            employee.Position = dto.Position;
-            employee.EmpNo = dto.EmpNo;
+            if (!string.IsNullOrWhiteSpace(dto.Position))
+                employee.Position = dto.Position;
+
+            if (!string.IsNullOrWhiteSpace(dto.EmpNo))
+                employee.EmpNo = dto.EmpNo;
+
             employee.IsActive = dto.IsActive;
 
 
@@ -108,9 +112,6 @@ namespace backend_EAD.Controllers
             return Ok(new { message = "Employee updated successfully." });
         }
 
-        // ======================================================
-        // POST: api/Employees
-        // ======================================================
         [HttpPost]
         public async Task<ActionResult<EmployeeDTO>> CreateEmployee([FromBody] CreateEmployeeDTO dto)
         {
@@ -130,13 +131,31 @@ namespace backend_EAD.Controllers
                 return BadRequest(new { message = "User creation failed", errors = result.Errors });
             }
 
+            // Auto-generate EmpNo
+            var lastEmployee = await _db.Employees
+                .OrderByDescending(e => e.EmpNo)
+                .FirstOrDefaultAsync();
+
+            string newEmpNo;
+            if (lastEmployee == null || string.IsNullOrEmpty(lastEmployee.EmpNo))
+            {
+                // If no employees exist, start with EMP001
+                newEmpNo = "EMP001";
+            }
+            else
+            {
+                // Extract the numeric part and increment
+                var lastNumber = int.Parse(lastEmployee.EmpNo.Substring(3));
+                newEmpNo = $"EMP{(lastNumber + 1):D3}";
+            }
+
             // Create the Employee record
             var employee = new Employee
             {
                 UserID = user.Id,
-                Position = dto.Position,
-                EmpNo = dto.EmpNo,
-                IsActive = dto.IsActive
+                Position = dto.Position ?? "Staff",
+                EmpNo = newEmpNo,
+                IsActive = true
             };
 
             _db.Employees.Add(employee);
