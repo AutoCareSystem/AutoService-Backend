@@ -9,7 +9,18 @@
         public string Role { get; set; } = "Employee";
         public DateTime CreatedAt { get; set; }
         public string? Position { get; set; }
-        public decimal Salary { get; set; }
+        public string? EmpNo { get; set; }
+        public bool IsActive { get; set; }
+    }
+
+    public class CreateEmployeeDTO
+    {
+        public string Email { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+        public string? PhoneNumber { get; set; }
+        public string Position { get; set; } = "Staff";
+        public string EmpNo { get; set; } = string.Empty;
+        public bool IsActive { get; set; } = true;
     }
 
     public class UpdateEmployeeDTO
@@ -18,6 +29,7 @@
         public string? Email { get; set; }
         public string? PhoneNumber { get; set; }
         public string? Position { get; set; }
-        public decimal Salary { get; set; }
+        public string? EmpNo { get; set; }
+        public bool IsActive { get; set; }
     }
 }

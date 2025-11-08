@@ -2,6 +2,8 @@
 using Microsoft.EntityFrameworkCore;
 using AutoServiceBackend.Data;
 using backend_EAD.DTOs;
+using backend_EAD.Models;
+using Microsoft.AspNetCore.Identity;
 
 namespace backend_EAD.Controllers
 {
@@ -10,10 +12,12 @@ namespace backend_EAD.Controllers
     public class EmployeesController : ControllerBase
     {
         private readonly AppDbContext _db;
+        private readonly UserManager<AppUser> _userManager;
 
-        public EmployeesController(AppDbContext db)
+        public EmployeesController(AppDbContext db, UserManager<AppUser> userManager)
         {
             _db = db;
+            _userManager = userManager;
         }
 
         // ======================================================
@@ -33,7 +37,8 @@ namespace backend_EAD.Controllers
                     Role = "Employee",
                     CreatedAt = e.User.CreatedAt,
                     Position = e.Position,
-                   
+                    EmpNo = e.EmpNo,
+                    IsActive = e.IsActive
                 })
                 .ToListAsync();
 
@@ -58,7 +63,8 @@ namespace backend_EAD.Controllers
                     Role = "Employee",
                     CreatedAt = e.User.CreatedAt,
                     Position = e.Position,
-          
+                    EmpNo = e.EmpNo,
+                    IsActive = e.IsActive
                 })
                 .FirstOrDefaultAsync();
 
@@ -93,11 +99,95 @@ namespace backend_EAD.Controllers
 
             // Update Employee-specific fields
             employee.Position = dto.Position;
-            
+            employee.EmpNo = dto.EmpNo;
+            employee.IsActive = dto.IsActive;
+
 
             await _db.SaveChangesAsync();
 
             return Ok(new { message = "Employee updated successfully." });
+        }
+
+        // ======================================================
+        // POST: api/Employees
+        // ======================================================
+        [HttpPost]
+        public async Task<ActionResult<EmployeeDTO>> CreateEmployee([FromBody] CreateEmployeeDTO dto)
+        {
+            // Create the AppUser
+            var user = new AppUser
+            {
+                UserName = dto.Email,
+                Email = dto.Email,
+                PhoneNumber = dto.PhoneNumber,
+                Role = "Employee",
+                CreatedAt = DateTime.UtcNow
+            };
+
+            var result = await _userManager.CreateAsync(user, dto.Password);
+            if (!result.Succeeded)
+            {
+                return BadRequest(new { message = "User creation failed", errors = result.Errors });
+            }
+
+            // Create the Employee record
+            var employee = new Employee
+            {
+                UserID = user.Id,
+                Position = dto.Position,
+                EmpNo = dto.EmpNo,
+                IsActive = dto.IsActive
+            };
+
+            _db.Employees.Add(employee);
+            await _db.SaveChangesAsync();
+
+            var employeeDto = new EmployeeDTO
+            {
+                UserID = user.Id,
+                UserName = user.UserName ?? string.Empty,
+                Email = user.Email ?? string.Empty,
+                PhoneNumber = user.PhoneNumber ?? string.Empty,
+                Role = "Employee",
+                CreatedAt = user.CreatedAt,
+                Position = employee.Position,
+                EmpNo = employee.EmpNo,
+                IsActive = employee.IsActive
+            };
+
+            return CreatedAtAction(nameof(GetEmployeeById), new { id = user.Id }, employeeDto);
+        }
+
+        // ======================================================
+        // DELETE: api/Employees/{id}
+        // ======================================================
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteEmployee(string id)
+        {
+            var employee = await _db.Employees
+                .Include(e => e.User)
+                .FirstOrDefaultAsync(e => e.UserID == id);
+
+            if (employee == null)
+                return NotFound(new { message = $"Employee with ID '{id}' not found." });
+
+            // Delete the Employee record
+            _db.Employees.Remove(employee);
+
+            // Delete the AppUser (Identity user)
+            var user = await _userManager.FindByIdAsync(id);
+            if (user != null)
+            {
+                var result = await _userManager.DeleteAsync(user);
+                if (!result.Succeeded)
+                {
+                    return BadRequest(new { message = "User deletion failed", errors = result.Errors });
+                }
+            }
+
+            await _db.SaveChangesAsync();
+
+            return Ok(new { message = "Employee deleted successfully." });
         }
     }
 }
