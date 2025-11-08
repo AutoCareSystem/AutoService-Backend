@@ -1,0 +1,53 @@
+### Chatbot Service API Testing
+
+@baseUrl = http://localhost:5294
+
+### 1. Health Check
+GET {{baseUrl}}/api/Chatbot/health
+
+### 2. Get Available Time Slots (Next 7 Days)
+GET {{baseUrl}}/api/Chatbot/available-slots
+
+### 3. Get Available Time Slots for Specific Date
+GET {{baseUrl}}/api/Chatbot/available-slots?startDate=2025-11-10&days=5
+
+### 4. Chat - Ask about available time slots
+POST {{baseUrl}}/api/Chatbot/chat
+Content-Type: application/json
+
+{
+  "message": "What are the available time slots for next week?"
+}
+
+### 5. Chat - Ask about specific date
+POST {{baseUrl}}/api/Chatbot/chat
+Content-Type: application/json
+
+{
+  "message": "Show me available appointments for tomorrow",
+  "preferredDate": "2025-11-09"
+}
+
+### 6. Chat - General question
+POST {{baseUrl}}/api/Chatbot/chat
+Content-Type: application/json
+
+{
+  "message": "What services do you provide?"
+}
+
+### 7. Chat - When can I book
+POST {{baseUrl}}/api/Chatbot/chat
+Content-Type: application/json
+
+{
+  "message": "When can I schedule my car for service?"
+}
+
+### 8. Chat - Available slots this week
+POST {{baseUrl}}/api/Chatbot/chat
+Content-Type: application/json
+
+{
+  "message": "Are there any free slots this week?"
+}

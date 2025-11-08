@@ -4,6 +4,9 @@ using Service_Management_Service.Data;
 
 Env.Load();
 
+// Configure PostgreSQL to handle DateTime properly
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
 var builder = WebApplication.CreateBuilder(args);
 
 var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
