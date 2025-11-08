@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using backend_EAD.Models;
+using backend_EAD.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -40,6 +41,11 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // Configure Identity
 builder.Services.AddIdentity<AppUser, Microsoft.AspNetCore.Identity.IdentityRole>()
     .AddEntityFrameworkStores<AppDbContext>();
+
+// -----------------------
+// Register HttpClient and NotificationHelper
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<NotificationHelper>();
 
 // -----------------------
 // Configure JWT Authentication
