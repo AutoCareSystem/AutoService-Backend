@@ -473,11 +473,11 @@ public class AppointmentsController : ControllerBase
 
             return Ok(new
             {
-                message = "Appointment started and approved.",
+                message = "Appointment now inprogress",
                 appointmentId = id,
                 startDate = appointment.StartDate.ToString("yyyy-MM-dd"),
                 time = appointment.Time.ToString(@"hh\:mm"),
-                status = "Approved",
+                status = "InProgress",
                 employeeId = dto.EmployeeID
             });
         }
