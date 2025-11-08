@@ -76,6 +76,7 @@ namespace backend_EAD.Controllers
 
         // ======================================================
         // PUT: api/Employees/{id}
+        // Update employee - Only allows UserName and PhoneNumber
         // ======================================================
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateEmployee(string id, [FromBody] UpdateEmployeeDTO dto)
@@ -87,94 +88,16 @@ namespace backend_EAD.Controllers
             if (employee == null)
                 return NotFound(new { message = $"Employee with ID '{id}' not found." });
 
-            // Update Identity user details
+            // Update only allowed fields: UserName and PhoneNumber
             if (!string.IsNullOrWhiteSpace(dto.UserName))
-                employee.User.UserName = dto.UserName;
-
-            if (!string.IsNullOrWhiteSpace(dto.Email))
-                employee.User.Email = dto.Email;
+                employee.User.UserName = dto.UserName.Trim();
 
             if (!string.IsNullOrWhiteSpace(dto.PhoneNumber))
-                employee.User.PhoneNumber = dto.PhoneNumber;
-
-            // Update Employee-specific fields
-            if (!string.IsNullOrWhiteSpace(dto.Position))
-                employee.Position = dto.Position;
-
-            if (!string.IsNullOrWhiteSpace(dto.EmpNo))
-                employee.EmpNo = dto.EmpNo;
-
-            employee.IsActive = dto.IsActive;
-
+                employee.User.PhoneNumber = dto.PhoneNumber.Trim();
 
             await _db.SaveChangesAsync();
 
-            return Ok(new { message = "Employee updated successfully." });
-        }
-
-        [HttpPost]
-        public async Task<ActionResult<EmployeeDTO>> CreateEmployee([FromBody] CreateEmployeeDTO dto)
-        {
-            // Create the AppUser
-            var user = new AppUser
-            {
-                UserName = dto.Email,
-                Email = dto.Email,
-                PhoneNumber = dto.PhoneNumber,
-                Role = "Employee",
-                CreatedAt = DateTime.UtcNow
-            };
-
-            var result = await _userManager.CreateAsync(user, dto.Password);
-            if (!result.Succeeded)
-            {
-                return BadRequest(new { message = "User creation failed", errors = result.Errors });
-            }
-
-            // Auto-generate EmpNo
-            var lastEmployee = await _db.Employees
-                .OrderByDescending(e => e.EmpNo)
-                .FirstOrDefaultAsync();
-
-            string newEmpNo;
-            if (lastEmployee == null || string.IsNullOrEmpty(lastEmployee.EmpNo))
-            {
-                // If no employees exist, start with EMP001
-                newEmpNo = "EMP001";
-            }
-            else
-            {
-                // Extract the numeric part and increment
-                var lastNumber = int.Parse(lastEmployee.EmpNo.Substring(3));
-                newEmpNo = $"EMP{(lastNumber + 1):D3}";
-            }
-
-            // Create the Employee record
-            var employee = new Employee
-            {
-                UserID = user.Id,
-                Position = dto.Position ?? "Staff",
-                EmpNo = newEmpNo,
-                IsActive = true
-            };
-
-            _db.Employees.Add(employee);
-            await _db.SaveChangesAsync();
-
-            var employeeDto = new EmployeeDTO
-            {
-                UserID = user.Id,
-                UserName = user.UserName ?? string.Empty,
-                Email = user.Email ?? string.Empty,
-                PhoneNumber = user.PhoneNumber ?? string.Empty,
-                Role = "Employee",
-                CreatedAt = user.CreatedAt,
-                Position = employee.Position,
-                EmpNo = employee.EmpNo,
-                IsActive = employee.IsActive
-            };
-
-            return CreatedAtAction(nameof(GetEmployeeById), new { id = user.Id }, employeeDto);
+            return Ok(new { message = "Employee profile updated successfully." });
         }
 
         // ======================================================

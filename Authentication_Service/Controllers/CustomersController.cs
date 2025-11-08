@@ -31,9 +31,9 @@ namespace backend_EAD.Controllers
                 .Select(c => new CustomerDTO
                 {
                     UserID = c.UserID,
-                    UserName = c.User.UserName,
-                    Email = c.User.Email,
-                    PhoneNumber = c.User.PhoneNumber,
+                    UserName = c.User.UserName ?? string.Empty,
+                    Email = c.User.Email ?? string.Empty,
+                    PhoneNumber = c.User.PhoneNumber ?? string.Empty,
                     Role = "Customer", // Always return Customer
                     CreatedAt = c.User.CreatedAt,
                     LoyaltyPoints = c.LoyaltyPoints,
@@ -56,9 +56,9 @@ namespace backend_EAD.Controllers
                 .Select(c => new CustomerDTO
                 {
                     UserID = c.UserID,
-                    UserName = c.User.UserName,
-                    Email = c.User.Email,
-                    PhoneNumber = c.User.PhoneNumber,
+                    UserName = c.User.UserName ?? string.Empty,
+                    Email = c.User.Email ?? string.Empty,
+                    PhoneNumber = c.User.PhoneNumber ?? string.Empty,
                     Role = "Customer",
                     CreatedAt = c.User.CreatedAt,
                     LoyaltyPoints = c.LoyaltyPoints,
@@ -74,6 +74,7 @@ namespace backend_EAD.Controllers
 
         // =====================================================
         // PUT: api/Customers/{id}
+        // Update customer - Only allows UserName, PhoneNumber, and Address
         // =====================================================
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateCustomer(string id, [FromBody] UpdateCustomerDTO dto)
@@ -85,71 +86,19 @@ namespace backend_EAD.Controllers
             if (customer == null)
                 return NotFound(new { message = $"Customer with ID '{id}' not found." });
 
-            // Update Identity user details
+            // Update only allowed fields: UserName, PhoneNumber, and Address
             if (!string.IsNullOrWhiteSpace(dto.UserName))
-                customer.User.UserName = dto.UserName;
-
-            if (!string.IsNullOrWhiteSpace(dto.Email))
-                customer.User.Email = dto.Email;
+                customer.User.UserName = dto.UserName.Trim();
 
             if (!string.IsNullOrWhiteSpace(dto.PhoneNumber))
-                customer.User.PhoneNumber = dto.PhoneNumber;
+                customer.User.PhoneNumber = dto.PhoneNumber.Trim();
 
-            // Update Customer-specific fields
-            customer.LoyaltyPoints = dto.LoyaltyPoints;
-            customer.Address = dto.Address;
+            // Address can be nullable, so allow empty/null to clear it
+            customer.Address = string.IsNullOrWhiteSpace(dto.Address) ? null : dto.Address.Trim();
 
             await _db.SaveChangesAsync();
 
-            return Ok(new { message = "Customer updated successfully." });
-        }
-
-        // =====================================================
-        // POST: api/Customers
-        // =====================================================
-        [HttpPost]
-        public async Task<ActionResult<CustomerDTO>> CreateCustomer([FromBody] CreateCustomerDTO dto)
-        {
-            // Create the AppUser
-            var user = new AppUser
-            {
-                UserName = dto.Email,
-                Email = dto.Email,
-                PhoneNumber = dto.PhoneNumber,
-                Role = "Customer",
-                CreatedAt = DateTime.UtcNow
-            };
-
-            var result = await _userManager.CreateAsync(user, dto.Password);
-            if (!result.Succeeded)
-            {
-                return BadRequest(new { message = "User creation failed", errors = result.Errors });
-            }
-
-            // Create the Customer record
-            var customer = new Customer
-            {
-                UserID = user.Id,
-                LoyaltyPoints = dto.LoyaltyPoints,
-                Address = dto.Address
-            };
-
-            _db.Customers.Add(customer);
-            await _db.SaveChangesAsync();
-
-            var customerDto = new CustomerDTO
-            {
-                UserID = user.Id,
-                UserName = user.UserName ?? string.Empty,
-                Email = user.Email ?? string.Empty,
-                PhoneNumber = user.PhoneNumber ?? string.Empty,
-                Role = "Customer",
-                CreatedAt = user.CreatedAt,
-                LoyaltyPoints = customer.LoyaltyPoints,
-                Address = customer.Address
-            };
-
-            return CreatedAtAction(nameof(GetCustomerById), new { id = user.Id }, customerDto);
+            return Ok(new { message = "Customer profile updated successfully." });
         }
 
         // =====================================================

@@ -1,0 +1,38 @@
+### QUICK TEST FILE FOR VEHICLES API
+### Base URL
+@baseUrl = http://localhost:5093
+
+### STEP 1: Login as Customer
+POST {{baseUrl}}/api/Auth/login
+Content-Type: application/json
+
+{
+  "email": "customer@example.com",
+  "password": "Password123!"
+}
+
+### COPY THE accessToken FROM ABOVE AND PASTE IT BELOW
+### Replace YOUR_TOKEN_HERE with the actual token
+
+### STEP 2: Get My Vehicles (Customer)
+GET {{baseUrl}}/api/Vehicles
+Authorization: Bearer YOUR_TOKEN_HERE
+
+### ===================================
+### FOR ADMIN/EMPLOYEE TO SEE ALL VEHICLES
+### ===================================
+
+### STEP 3: Login as Admin
+POST {{baseUrl}}/api/Auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "Admin123!"
+}
+
+### COPY THE accessToken FROM ABOVE
+
+### STEP 4: Get ALL Vehicles (Admin/Employee)
+GET {{baseUrl}}/api/Vehicles/all
+Authorization: Bearer YOUR_ADMIN_TOKEN_HERE

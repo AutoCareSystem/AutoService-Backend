@@ -23,13 +23,13 @@
         // IsActive is removed from input - defaults to true
     }
 
+    /// <summary>
+    /// Update employee DTO - Only allows updating UserName and PhoneNumber
+    /// Email, Position, EmpNo, and IsActive are restricted for security and business logic
+    /// </summary>
     public class UpdateEmployeeDTO
     {
         public string? UserName { get; set; }
-        public string? Email { get; set; }
         public string? PhoneNumber { get; set; }
-        public string? Position { get; set; }
-        public string? EmpNo { get; set; }
-        public bool IsActive { get; set; }
     }
 }
