@@ -1,6 +1,7 @@
 ### Chatbot Service API Testing
 
-@baseUrl = http://localhost:5294
+# @baseUrl = http://localhost:5294
+@baseUrl = http://localhost:5093
 
 ### 1. Health Check
 GET {{baseUrl}}/api/Chatbot/health
