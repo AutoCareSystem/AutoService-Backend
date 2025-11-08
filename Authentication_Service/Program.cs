@@ -6,18 +6,13 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using backend_EAD.Models;
 
-// Configure PostgreSQL to handle DateTime properly
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 var builder = WebApplication.CreateBuilder(args);
 
-// -----------------------
-// Load .env (for local development)
 DotNetEnv.Env.Load();
 builder.Configuration.AddEnvironmentVariables();
 
-// -----------------------
-// Read environment variables
 var dbUrl = builder.Configuration["DATABASE_URL"];
 var jwtKey = builder.Configuration["Jwt:Key"];
 var jwtIssuer = builder.Configuration["Jwt:Issuer"];
@@ -25,8 +20,6 @@ var jwtAudience = builder.Configuration["Jwt:Audience"];
 
 Console.WriteLine($"JWT_KEY length: {Environment.GetEnvironmentVariable("JWT_KEY")?.Length}");
 
-// -----------------------
-// Null checks
 if (string.IsNullOrEmpty(dbUrl))
     throw new InvalidOperationException("DATABASE_URL is missing. Set it in .env or environment variables.");
 if (string.IsNullOrEmpty(jwtKey))
@@ -34,18 +27,12 @@ if (string.IsNullOrEmpty(jwtKey))
 if (string.IsNullOrEmpty(jwtIssuer) || string.IsNullOrEmpty(jwtAudience))
     throw new InvalidOperationException("JWT_ISSUER or JWT_AUDIENCE is missing.");
 
-// -----------------------
-// Configure DbContext
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(dbUrl));
 
-// -----------------------
-// Configure Identity
 builder.Services.AddIdentity<AppUser, Microsoft.AspNetCore.Identity.IdentityRole>()
     .AddEntityFrameworkStores<AppDbContext>();
 
-// -----------------------
-// Configure JWT Authentication
 var keyBytes = Encoding.UTF8.GetBytes(jwtKey);
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -62,8 +49,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-// -----------------------
-// Authorization, Controllers, CORS
 builder.Services.AddAuthorization();
 builder.Services.AddControllers();
 builder.Services.AddCors(options =>
@@ -74,8 +59,6 @@ builder.Services.AddCors(options =>
               .AllowAnyHeader());
 });
 
-// -----------------------
-// Swagger (must be after builder)
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -86,7 +69,6 @@ builder.Services.AddSwaggerGen(options =>
         Description = "API for authentication and user profile management"
     });
 
-    // Add JWT Authentication
     options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -115,8 +97,6 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
-// -----------------------
-// Swagger UI visible everywhere (including Docker)
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
@@ -124,8 +104,6 @@ app.UseSwaggerUI(c =>
     c.RoutePrefix = string.Empty; // open at root "/"
 });
 
-// -----------------------
-// Test database connection
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -142,14 +120,10 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-// -----------------------
-// Middleware
 app.UseCors("AllowReact");
 app.UseAuthentication();
 app.UseAuthorization();
 
-// -----------------------
-// Map Controllers
 app.MapControllers();
 
 app.Run();
