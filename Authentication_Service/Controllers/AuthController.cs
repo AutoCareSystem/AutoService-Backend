@@ -7,6 +7,7 @@ using System.Text;
 using backend_EAD.Models;
 using AutoServiceBackend.Data;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -30,7 +31,7 @@ public class AuthController : ControllerBase
         var user = new AppUser { UserName = dto.Email, Email = dto.Email, Role = dto.Role };
         var result = await _userManager.CreateAsync(user, dto.Password);
         if (!result.Succeeded) return BadRequest(result.Errors);
-        
+
         // Create Customer or Employee record based on role
         if (dto.Role == "Customer")
         {
@@ -40,11 +41,35 @@ public class AuthController : ControllerBase
         }
         else if (dto.Role == "Employee")
         {
-            var employee = new Employee { UserID = user.Id, IsActive = true, Position = "Staff" };
+            // Auto-generate EmpNo
+            var lastEmployee = await _db.Employees
+                .OrderByDescending(e => e.EmpNo)
+                .FirstOrDefaultAsync();
+
+            string newEmpNo;
+            if (lastEmployee == null || string.IsNullOrEmpty(lastEmployee.EmpNo))
+            {
+                // If no employees exist, start with EMP001
+                newEmpNo = "EMP001";
+            }
+            else
+            {
+                // Extract the numeric part and increment
+                var lastNumber = int.Parse(lastEmployee.EmpNo.Substring(3));
+                newEmpNo = $"EMP{(lastNumber + 1):D3}";
+            }
+
+            var employee = new Employee
+            {
+                UserID = user.Id,
+                IsActive = true,
+                Position = "Staff",
+                EmpNo = newEmpNo
+            };
             _db.Employees.Add(employee);
             await _db.SaveChangesAsync();
         }
-        
+
         return Ok("User registered");
     }
 

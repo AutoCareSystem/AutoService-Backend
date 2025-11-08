@@ -18,9 +18,9 @@
         public string Email { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
         public string? PhoneNumber { get; set; }
-        public string Position { get; set; } = "Staff";
-        public string EmpNo { get; set; } = string.Empty;
-        public bool IsActive { get; set; } = true;
+        public string? Position { get; set; }
+        // EmpNo is removed from input - it will be auto-generated
+        // IsActive is removed from input - defaults to true
     }
 
     public class UpdateEmployeeDTO
