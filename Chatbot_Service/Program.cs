@@ -5,15 +5,12 @@ using Chatbot_Service.Services;
 
 Env.Load();
 
-// Configure PostgreSQL to handle DateTime properly
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add environment variables to configuration
 builder.Configuration.AddEnvironmentVariables();
 
-// Get connection string
 var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL");
 
 if (string.IsNullOrEmpty(connectionString))
@@ -21,7 +18,6 @@ if (string.IsNullOrEmpty(connectionString))
     throw new InvalidOperationException("DATABASE_URL is missing. Set it in .env file.");
 }
 
-// Configure DbContext
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
     options.UseNpgsql(connectionString, npgsqlOptions =>
@@ -33,11 +29,9 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     });
 });
 
-// Register Services
 builder.Services.AddScoped<TimeSlotService>();
 builder.Services.AddScoped<GeminiService>();
 
-// Add Controllers
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -45,7 +39,6 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.WriteIndented = true;
     });
 
-// Configure CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -54,7 +47,6 @@ builder.Services.AddCors(options =>
               .AllowAnyHeader());
 });
 
-// Configure Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -68,7 +60,6 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
-// Configure middleware
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -78,7 +69,6 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-// Test database connection
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
