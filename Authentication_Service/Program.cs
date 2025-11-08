@@ -18,6 +18,7 @@ var jwtKey = builder.Configuration["Jwt:Key"];
 var jwtIssuer = builder.Configuration["Jwt:Issuer"];
 var jwtAudience = builder.Configuration["Jwt:Audience"];
 
+Console.WriteLine($"JWT: {jwtIssuer} {jwtAudience}");
 Console.WriteLine($"JWT_KEY length: {Environment.GetEnvironmentVariable("JWT_KEY")?.Length}");
 
 if (string.IsNullOrEmpty(dbUrl))
@@ -56,6 +57,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowReact", policy =>
         policy.WithOrigins("http://localhost:5173")
               .AllowAnyMethod()
+              .AllowCredentials()
               .AllowAnyHeader());
 });
 
