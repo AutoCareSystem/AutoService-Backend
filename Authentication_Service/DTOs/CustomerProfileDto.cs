@@ -12,6 +12,15 @@ namespace backend_EAD.DTOs
         public string? Address { get; set; }
     }
 
+    public class CreateCustomerDTO
+    {
+        public string Email { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+        public string? PhoneNumber { get; set; }
+        public int LoyaltyPoints { get; set; } = 0;
+        public string? Address { get; set; }
+    }
+
     public class UpdateCustomerDTO
     {
         public string? UserName { get; set; }
