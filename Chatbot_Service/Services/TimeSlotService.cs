@@ -26,7 +26,7 @@ public class TimeSlotService
         try
         {
             // Use UTC to avoid PostgreSQL timezone issues
-            var startDate = preferredDate.HasValue 
+            var startDate = preferredDate.HasValue
                 ? DateTime.SpecifyKind(preferredDate.Value.Date, DateTimeKind.Utc)
                 : DateTime.SpecifyKind(DateTime.Today, DateTimeKind.Utc);
             var endDate = startDate.AddDays(numberOfDays);
