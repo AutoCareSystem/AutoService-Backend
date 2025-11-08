@@ -24,15 +24,6 @@ namespace backend_EAD.DTOs
         public string? Address { get; set; }
     }
 
-    public class UpdateCustomerDTO
-    {
-        public string? UserName { get; set; }
-        public string? Email { get; set; }
-        public string? PhoneNumber { get; set; }
-        public int LoyaltyPoints { get; set; }
-        public string? Address { get; set; }
-    }
-
     // =====================================================
     // Profile DTOs (for customer self-service)
     // =====================================================
