@@ -15,12 +15,14 @@ namespace backend_EAD.DTOs
         public string? Address { get; set; }
     }
 
+    /// <summary>
+    /// Update customer DTO - Only allows updating UserName, PhoneNumber, and Address
+    /// Email, LoyaltyPoints are restricted for security and business logic
+    /// </summary>
     public class UpdateCustomerDTO
     {
         public string? UserName { get; set; }
-        public string? Email { get; set; }
         public string? PhoneNumber { get; set; }
-        public int LoyaltyPoints { get; set; }
         public string? Address { get; set; }
     }
 

@@ -74,6 +74,7 @@ namespace backend_EAD.Controllers
 
         // =====================================================
         // PUT: api/Customers/{id}
+        // Update customer - Only allows UserName, PhoneNumber, and Address
         // =====================================================
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateCustomer(string id, [FromBody] UpdateCustomerDTO dto)
@@ -85,23 +86,19 @@ namespace backend_EAD.Controllers
             if (customer == null)
                 return NotFound(new { message = $"Customer with ID '{id}' not found." });
 
-            // Update Identity user details
+            // Update only allowed fields: UserName, PhoneNumber, and Address
             if (!string.IsNullOrWhiteSpace(dto.UserName))
-                customer.User.UserName = dto.UserName;
-
-            if (!string.IsNullOrWhiteSpace(dto.Email))
-                customer.User.Email = dto.Email;
+                customer.User.UserName = dto.UserName.Trim();
 
             if (!string.IsNullOrWhiteSpace(dto.PhoneNumber))
-                customer.User.PhoneNumber = dto.PhoneNumber;
+                customer.User.PhoneNumber = dto.PhoneNumber.Trim();
 
-            // Update Customer-specific fields
-            customer.LoyaltyPoints = dto.LoyaltyPoints;
-            customer.Address = dto.Address;
+            // Address can be nullable, so allow empty/null to clear it
+            customer.Address = string.IsNullOrWhiteSpace(dto.Address) ? null : dto.Address.Trim();
 
             await _db.SaveChangesAsync();
 
-            return Ok(new { message = "Customer updated successfully." });
+            return Ok(new { message = "Customer profile updated successfully." });
         }
 
         // =====================================================

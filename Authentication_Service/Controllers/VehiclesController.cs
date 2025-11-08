@@ -161,37 +161,6 @@ namespace backend_EAD.Controllers
         }
 
         // =====================================================
-        // PUT: api/Vehicles/{id}
-        // Update a vehicle (No authentication required)
-        // =====================================================
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateVehicle(int id, [FromBody] UpdateVehicleDto dto)
-        {
-            var vehicle = await _db.Vehicles.FindAsync(id);
-            if (vehicle == null)
-                return NotFound(new { message = "Vehicle not found." });
-
-            // Update fields if provided
-            if (!string.IsNullOrWhiteSpace(dto.Model))
-                vehicle.Model = dto.Model.Trim();
-
-            if (!string.IsNullOrWhiteSpace(dto.Year))
-                vehicle.Year = dto.Year.Trim();
-
-            if (!string.IsNullOrWhiteSpace(dto.PlateNumber))
-                vehicle.PlateNumber = dto.PlateNumber.Trim().ToUpper();
-
-            if (dto.Company != null)
-                vehicle.Company = string.IsNullOrWhiteSpace(dto.Company) ? null : dto.Company.Trim();
-
-            await _db.SaveChangesAsync();
-
-            _logger.LogInformation("Updated vehicle {VehicleId}", id);
-
-            return Ok(new { message = "Vehicle updated successfully." });
-        }
-
-        // =====================================================
         // DELETE: api/Vehicles/{id}
         // Delete a vehicle (No authentication required)
         // =====================================================
