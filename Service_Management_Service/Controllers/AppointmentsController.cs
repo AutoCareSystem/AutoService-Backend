@@ -330,6 +330,37 @@ public class AppointmentsController : ControllerBase
         return Ok(result);
     }
 
+    [HttpGet("customer/{customerId}/vehicle/{vehicleId}/all")]
+    public async Task<ActionResult<IEnumerable<Appointment>>> GetVehicleAllAppointments(
+        string customerId,
+        int vehicleId)
+    {
+        // === 1. Validate Vehicle Ownership ===
+        var vehicleExists = await _context.Vehicles
+            .AnyAsync(v => v.VehicleID == vehicleId && v.CustomerID == customerId);
+
+        if (!vehicleExists)
+            return NotFound("Vehicle not found or does not belong to the customer.");
+
+        // === 2. Fetch All Appointments (Service and Project) ===
+        var appointments = await _context.Appointments
+            .Where(a => a.CustomerID == customerId && a.VehicleID == vehicleId)
+            .Include(a => a.ServiceDetails!)
+                .ThenInclude(sd => sd!.ServicePackage!)
+                .ThenInclude(p => p!.Items!)
+                .ThenInclude(i => i!.Service)
+            .Include(a => a.ProjectDetails!)
+            .Include(a => a.AppointmentServices!)
+                .ThenInclude(aps => aps!.Service)
+            .Include(a => a.Employee!)
+                .ThenInclude(e => e!.User)
+            .OrderByDescending(a => a.StartDate)
+            .ThenByDescending(a => a.Time)
+            .ToListAsync();
+
+        return Ok(appointments);
+    }
+
     // PUT: api/appointments/123/accept
     [HttpPut("{id}/accept")]
     public async Task<IActionResult> AcceptAppointment(int id, [FromBody] AcceptAppointmentDto dto)
@@ -523,15 +554,15 @@ public class AppointmentsController : ControllerBase
         if (!vehicleExists)
             return NotFound("Vehicle not found or does not belong to the customer.");
 
-        // === 2. Fetch Appointments (EF Core safe) ===
+        // === 2. Fetch Appointments (EF Core safe) - Include both Service and Project ===
         var appointments = await _context.Appointments
             .Where(a => a.CustomerID == customerId &&
-                        a.VehicleID == vehicleId &&
-                        a.AppointmentType == "Service")
+                        a.VehicleID == vehicleId)
             .Include(a => a.ServiceDetails!)
                 .ThenInclude(sd => sd!.ServicePackage!)
                 .ThenInclude(p => p!.Items!)
                 .ThenInclude(i => i!.Service)
+            .Include(a => a.ProjectDetails!)
             .Include(a => a.AppointmentServices!)
                 .ThenInclude(aps => aps!.Service)
             .ToListAsync();
@@ -552,36 +583,51 @@ public class AppointmentsController : ControllerBase
                 endDateDisplay = "Not completed yet";
             }
 
-            // === FULL / HALF PACKAGE ===
-            if (appt.ServiceDetails?.ServiceOption is "Full" or "Half")
+            // === SERVICE APPOINTMENTS ===
+            if (appt.AppointmentType == "Service")
             {
-                if (appt.ServiceDetails.ServicePackage?.Items != null)
+                // === FULL / HALF PACKAGE ===
+                if (appt.ServiceDetails?.ServiceOption is "Full" or "Half")
                 {
-                    foreach (var item in appt.ServiceDetails.ServicePackage.Items)
+                    if (appt.ServiceDetails.ServicePackage?.Items != null)
+                    {
+                        foreach (var item in appt.ServiceDetails.ServicePackage.Items)
+                        {
+                            history.Add(new ServiceHistoryItemDto
+                            {
+                                Title = item.Service.Title,
+                                Status = appt.Status,
+                                Price = item.Service.Price,
+                                EndDateDisplay = endDateDisplay
+                            });
+                        }
+                    }
+                }
+                // === CUSTOM SERVICES ===
+                else if (appt.ServiceDetails?.ServiceOption == "Custom")
+                {
+                    foreach (var aps in appt.AppointmentServices)
                     {
                         history.Add(new ServiceHistoryItemDto
                         {
-                            Title = item.Service.Title,
+                            Title = aps.Service.Title,
                             Status = appt.Status,
-                            Price = item.Service.Price,
+                            Price = aps.CustomPrice ?? aps.Service.Price,
                             EndDateDisplay = endDateDisplay
                         });
                     }
                 }
             }
-            // === CUSTOM SERVICES ===
-            else if (appt.ServiceDetails?.ServiceOption == "Custom")
+            // === PROJECT APPOINTMENTS ===
+            else if (appt.AppointmentType == "Project" && appt.ProjectDetails != null)
             {
-                foreach (var aps in appt.AppointmentServices)
+                history.Add(new ServiceHistoryItemDto
                 {
-                    history.Add(new ServiceHistoryItemDto
-                    {
-                        Title = aps.Service.Title,
-                        Status = appt.Status,
-                        Price = aps.CustomPrice ?? aps.Service.Price,
-                        EndDateDisplay = endDateDisplay
-                    });
-                }
+                    Title = appt.ProjectDetails.ProjectTitle ?? "Custom Project",
+                    Status = appt.Status,
+                    Price = appt.TotalPrice ?? 0,
+                    EndDateDisplay = endDateDisplay
+                });
             }
         }
 

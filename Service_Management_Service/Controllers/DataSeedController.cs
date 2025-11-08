@@ -5,6 +5,11 @@ using Service_Management_Service.Models;
 
 namespace Service_Management_Service.Controllers;
 
+/// <summary>
+/// DEVELOPMENT/TESTING ONLY - Data Seeding Controller
+/// This controller contains hardcoded sample data for development and testing purposes.
+/// Should be removed or secured before production deployment.
+/// </summary>
 [Route("api/[controller]")]
 [ApiController]
 public class DataSeedController : ControllerBase
