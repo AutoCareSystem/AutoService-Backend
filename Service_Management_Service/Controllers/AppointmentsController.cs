@@ -408,8 +408,8 @@ public class AppointmentsController : ControllerBase
         if (appointment.Status == "Completed")
             return BadRequest("Appointment is already completed.");
 
-        if (appointment.Status != "Approved")
-            return BadRequest("Only Approved appointments can be completed.");
+        if (appointment.Status != "InProgress")
+            return BadRequest("Only InProgress appointments can be completed.");
 
         // === 5. Mark as Completed + Set EndDate to NOW ===
         appointment.Status = "Completed";
@@ -464,12 +464,8 @@ public class AppointmentsController : ControllerBase
         // === 5. Auto-set StartDate to NOW (rounded to date only) ===
         var now = DateTime.Now;
         appointment.StartDate = DateTime.Now;                   
-        appointment.Time = new TimeSpan(now.Hour, now.Minute, now.Second); 
-        
-
-
-        // === 6. Set status to Approved (even if already Approved) ===
-        appointment.Status = "Approved";
+        appointment.Time = new TimeSpan(now.Hour, now.Minute, now.Second);
+        appointment.Status = "InProgress";
 
         try
         {
