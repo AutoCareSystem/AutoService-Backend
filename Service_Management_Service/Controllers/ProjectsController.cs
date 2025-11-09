@@ -102,6 +102,42 @@ public class ProjectsController : ControllerBase
 
         return Ok(sortedHistory);
     }
+    
+    // GET: api/projects/customer/{customerId}
+    [HttpGet("customer/{customerId}")]
+    public async Task<ActionResult<IEnumerable<object>>> GetProjectsByCustomer(string customerId)
+    {
+        var projects = await _context.Appointments
+            .Where(a => a.AppointmentType == "Project" && a.CustomerID == customerId)
+            .Include(a => a.Vehicle)
+            .Include(a => a.Employee).ThenInclude(e => e.User)
+            .Include(a => a.ProjectDetails)
+            .OrderByDescending(a => a.StartDate)
+            .Select(a => new
+            {
+                a.AppointmentID,
+                a.CustomerID,
+                a.VehicleID,
+                Vehicle = a.Vehicle != null ? new
+                {
+                    a.Vehicle.VehicleID,
+                    a.Vehicle.Company,
+                    a.Vehicle.Model,
+                    a.Vehicle.Year,
+                    a.Vehicle.PlateNumber
+                } : null,
+                ProjectTitle = a.ProjectDetails != null ? a.ProjectDetails.ProjectTitle : "Untitled Project",
+                ProjectDescription = a.ProjectDetails != null ? a.ProjectDetails.ProjectDescription : "",
+                a.Status,
+                a.StartDate,
+                a.EndDate,
+                a.Time,
+                AssignedEmployee = a.Employee != null && a.Employee.User != null ? a.Employee.User.UserName : "Not Assigned"
+            })
+            .ToListAsync();
+
+        return Ok(projects);
+    }
 
     // PUT: api/projects/{id}
     [HttpPut("{id}")]
