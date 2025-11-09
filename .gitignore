@@ -6,7 +6,6 @@ obj/
 *.userosscache
 *.sln.docstates
 *.vs/
-.vscode/
 # Rider
 .idea/
 *.sln.iml
@@ -59,12 +58,8 @@ _ReSharper*/
 # Rider
 .idea/
 # VS Code
-.vscode/
 
 # Environment files (contains sensitive data)
-.env
-.env.local
-.env.production
 
 # Database files
 *.db
@@ -74,3 +69,6 @@ _ReSharper*/
 # Connection strings with secrets (if any)
 appsettings.Production.json
 appsettings.Staging.json
+k8s/db-secret.yaml
+config.bat
+node_modules
