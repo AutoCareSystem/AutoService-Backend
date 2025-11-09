@@ -2,12 +2,12 @@
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /app
 
-COPY backend.csproj ./
-RUN dotnet restore backend.csproj
+COPY Notification_Service.csproj ./
+RUN dotnet restore Notification_Service.csproj
 
 COPY . ./
 
-RUN dotnet publish ./backend.csproj -c Release -o /out
+RUN dotnet publish ./Notification_Service.csproj -c Release -o /out
 
 
 # Stage 2 - Runtime
@@ -19,4 +19,4 @@ EXPOSE 8080
 
 COPY --from=build /out .
 
-ENTRYPOINT ["dotnet", "backend.dll"]
+ENTRYPOINT ["dotnet", "Notification_Service.dll"]

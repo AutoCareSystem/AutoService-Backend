@@ -2,17 +2,11 @@
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /app
 
-# Copy project files first (for caching)
-COPY *.csproj ./
-RUN dotnet restore ./Service_Management_Service.csproj
+COPY Service_Management_Service.csproj ./
+RUN dotnet restore Service_Management_Service.csproj
 
-# Copy the rest of the source code
 COPY . ./
 
-# ✅ Copy .env file (so the app can load it if not passed from docker run)
-COPY .env .env
-
-# Build and publish
 RUN dotnet publish ./Service_Management_Service.csproj -c Release -o /out
 
 
@@ -20,14 +14,9 @@ RUN dotnet publish ./Service_Management_Service.csproj -c Release -o /out
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
 WORKDIR /app
 
-# Expose and set app URL
 ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080
 
-# Copy published output
 COPY --from=build /out .
-
-# ✅ Optional: copy .env again (for clarity)
-COPY .env .env
 
 ENTRYPOINT ["dotnet", "Service_Management_Service.dll"]
