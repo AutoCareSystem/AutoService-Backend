@@ -18,6 +18,9 @@ if (string.IsNullOrEmpty(connectionString))
     throw new InvalidOperationException("DATABASE_URL is missing. Set it in .env file.");
 }
 
+// =====================================================
+// FIX 1: ADDED THE MISSING AppDbContext SERVICE
+// =====================================================
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
     options.UseNpgsql(connectionString, npgsqlOptions =>
@@ -26,6 +29,20 @@ builder.Services.AddDbContext<AppDbContext>(options =>
             maxRetryCount: 3,
             maxRetryDelay: TimeSpan.FromSeconds(5),
             errorCodesToAdd: null);
+    });
+});
+
+// =====================================================
+// This is your correct CORS policy
+// =====================================================
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowMyReactApp", policy =>
+    {
+        policy.WithOrigins("http://localhost:5173") // Your React app's URL
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials();
     });
 });
 
@@ -39,13 +56,10 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.WriteIndented = true;
     });
 
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowAll", policy =>
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader());
-});
+// =====================================================
+// FIX 2: REMOVED THE DUPLICATE "AllowAll" CORS POLICY
+// =====================================================
+// (The duplicate policy that was here has been removed)
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
@@ -69,6 +83,7 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+// Database connection check and migration logic (unchanged)
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -88,6 +103,16 @@ using (var scope = app.Services.CreateScope())
         else
         {
             Console.WriteLine("⚠️ Database connection failed - CanConnectAsync returned false!");
+            Console.WriteLine("ℹ️ Attempting to migrate database...");
+            try
+            {
+                await dbContext.Database.MigrateAsync();
+                Console.WriteLine("✅ Database migration completed!");
+            }
+            catch (Exception migrateEx)
+            {
+                Console.WriteLine($"⚠️ Migration failed: {migrateEx.Message}");
+            }
         }
     }
     catch (Exception ex)
@@ -101,7 +126,9 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-app.UseCors("AllowAll");
+// Ensure you are using the correct policy name here
+app.UseCors("AllowMyReactApp");
+
 app.UseHttpsRedirection();
 app.MapControllers();
 

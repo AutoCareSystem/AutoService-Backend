@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Cors;
 using Chatbot_Service.DTOs;
 using Chatbot_Service.Services;
 
@@ -6,6 +7,7 @@ namespace Chatbot_Service.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[EnableCors("AllowAll")]
 public class ChatbotController : ControllerBase
 {
     private readonly TimeSlotService _timeSlotService;
