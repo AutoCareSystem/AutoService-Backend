@@ -89,38 +89,19 @@ namespace backend_EAD.Controllers
             if (customer == null)
                 return NotFound(new { message = $"Customer with ID '{id}' not found." });
 
-            var updatedFields = new List<string>();
-
             // Update only allowed fields: UserName, PhoneNumber, and Address
-            if (!string.IsNullOrWhiteSpace(dto.UserName) && dto.UserName.Trim() != customer.User.UserName)
-            {
+            if (!string.IsNullOrWhiteSpace(dto.UserName))
                 customer.User.UserName = dto.UserName.Trim();
-                updatedFields.Add("UserName");
-            }
 
-            if (!string.IsNullOrWhiteSpace(dto.PhoneNumber) && dto.PhoneNumber.Trim() != customer.User.PhoneNumber)
-            {
+            if (!string.IsNullOrWhiteSpace(dto.PhoneNumber))
                 customer.User.PhoneNumber = dto.PhoneNumber.Trim();
-                updatedFields.Add("PhoneNumber");
-            }
 
             // Address can be nullable, so allow empty/null to clear it
-            var newAddress = string.IsNullOrWhiteSpace(dto.Address) ? null : dto.Address.Trim();
-            if (newAddress != customer.Address)
-            {
-                customer.Address = newAddress;
-                updatedFields.Add("Address");
-            }
+            customer.Address = string.IsNullOrWhiteSpace(dto.Address) ? null : dto.Address.Trim();
 
             await _db.SaveChangesAsync();
 
-            // Send notification if any fields were updated
-            if (updatedFields.Any())
-            {
-                await _notificationHelper.SendProfileUpdateNotificationAsync(id, "Customer", updatedFields);
-            }
-
-            return Ok(new { message = "Customer profile updated successfully.", updatedFields });
+            return Ok(new { message = "Customer profile updated successfully." });
         }
 
         // =====================================================

@@ -380,7 +380,7 @@ public class AppointmentsController : ControllerBase
         }
     }
 
-    // PUT: api/appointments/123/complete
+    // PUT: api/appointments/{id}/complete
     [HttpPut("{id}/complete")]
     public async Task<IActionResult> CompleteAppointment(int id, [FromBody] CompleteAppointmentDto dto)
     {
@@ -408,19 +408,76 @@ public class AppointmentsController : ControllerBase
         if (appointment.Status == "Completed")
             return BadRequest("Appointment is already completed.");
 
-        if (appointment.Status != "Approved")
-            return BadRequest("Only Approved appointments can be completed.");
+        if (appointment.Status != "InProgress")
+            return BadRequest("Only InProgress appointments can be completed.");
 
-        // === 5. Mark as Completed ===
+        // === 5. Mark as Completed + Set EndDate to NOW ===
         appointment.Status = "Completed";
+        appointment.EndDate = DateTime.Now;  
 
         try
         {
             await _context.SaveChangesAsync();
+
             return Ok(new
             {
-                message = "Appointment completed.",
+                message = "Appointment completed successfully.",
                 status = "Completed",
+                employeeId = dto.EmployeeID,
+                completedAt = appointment.EndDate.Value.ToString("yyyy-MM-dd HH:mm:ss") 
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Error: {ex.Message}");
+        }
+    }
+
+    // PUT: api/appointments/123/start
+    [HttpPut("{id}/start")]
+    public async Task<IActionResult> StartAppointment(int id, [FromBody] StartAppointmentDto dto)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        // === 1. Load appointment with Employee ===
+        var appointment = await _context.Appointments
+            .Include(a => a.Employee)
+                .ThenInclude(e => e.User)
+            .FirstOrDefaultAsync(a => a.AppointmentID == id);
+
+        if (appointment == null)
+            return NotFound("Appointment not found.");
+
+        // === 2. Must be assigned ===
+        if (string.IsNullOrWhiteSpace(appointment.EmployeeID))
+            return BadRequest("Appointment must be assigned to an employee.");
+
+        // === 3. Employee must match ===
+        if (appointment.EmployeeID != dto.EmployeeID)
+            return Forbid("You can only start your own appointments.");
+
+        // === 4. Cannot start a completed appointment ===
+        if (appointment.Status == "Completed")
+            return BadRequest("Cannot start a completed appointment.");
+
+        // === 5. Auto-set StartDate to NOW (rounded to date only) ===
+        var now = DateTime.Now;
+        appointment.StartDate = DateTime.Now;                   
+        appointment.Time = new TimeSpan(now.Hour, now.Minute, now.Second);
+        appointment.Status = "InProgress";
+
+        try
+        {
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                message = "Appointment now inprogress",
+                appointmentId = id,
+                startDate = appointment.StartDate.ToString("yyyy-MM-dd"),
+                time = appointment.Time.ToString(@"hh\:mm"),
+                status = "InProgress",
                 employeeId = dto.EmployeeID
             });
         }
@@ -429,6 +486,7 @@ public class AppointmentsController : ControllerBase
             return StatusCode(500, $"Error: {ex.Message}");
         }
     }
+
 
     [HttpGet("service")]
     public async Task<ActionResult<IEnumerable<ServiceAppointmentDetailsDto>>> GetServiceAppointments(
