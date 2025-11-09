@@ -53,6 +53,56 @@ public class ProjectsController : ControllerBase
         return Ok(project);
     }
 
+    // GET: api/projects/customer/{customerId}/vehicle/{vehicleId}/history
+    [HttpGet("customer/{customerId}/vehicle/{vehicleId}/history")]
+    public async Task<ActionResult<IEnumerable<ProjectHistoryItemDto>>> GetProjectHistory(
+        string customerId,
+        int vehicleId)
+    {
+        var vehicleExists = await _context.Vehicles
+            .AnyAsync(v => v.VehicleID == vehicleId && v.CustomerID == customerId);
+
+        if (!vehicleExists)
+            return NotFound("Vehicle not found or does not belong to the customer.");
+
+        var appointments = await _context.Appointments
+            .Where(a => a.CustomerID == customerId &&
+                        a.VehicleID == vehicleId &&
+                        a.AppointmentType == "Project")
+            .Include(a => a.ProjectDetails!)
+            .ToListAsync();
+
+        var history = new List<ProjectHistoryItemDto>();
+
+        foreach (var appt in appointments)
+        {
+            string endDateDisplay = appt.Status == "Completed"
+                ? (appt.EndDate ?? appt.StartDate.Add(appt.Time))
+                    .ToString("yyyy-MM-dd HH:mm")
+                : "Not completed yet";
+
+            if (appt.ProjectDetails != null)
+            {
+                history.Add(new ProjectHistoryItemDto
+                {
+                    Title = appt.ProjectDetails.ProjectTitle,
+                    Description = appt.ProjectDetails.ProjectDescription ?? "No description", 
+                    Status = appt.Status,
+                    Price = appt.TotalPrice ?? 0m,
+                    EndDateDisplay = endDateDisplay
+                });
+            }
+        }
+        var sortedHistory = history
+            .OrderBy(h => h.Status == "Pending" ? 0 : 1)
+            .ThenByDescending(h => h.EndDateDisplay == "Not completed yet"
+                ? DateTime.MinValue
+                : DateTime.ParseExact(h.EndDateDisplay, "yyyy-MM-dd HH:mm", null))
+            .ToList();
+
+        return Ok(sortedHistory);
+    }
+    
     // GET: api/projects/customer/{customerId}
     [HttpGet("customer/{customerId}")]
     public async Task<ActionResult<IEnumerable<object>>> GetProjectsByCustomer(string customerId)
