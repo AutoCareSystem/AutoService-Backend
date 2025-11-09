@@ -15,14 +15,12 @@ spec:
       containers:
         - name: service-management
           image: service-management:latest
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Never
           ports:
             - containerPort: 8080
           envFrom:
             - secretRef:
                 name: db-secret
-            - configMapRef:
-                name: service-management-config
           readinessProbe:
             httpGet:
               path: /health/ready
