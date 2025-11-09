@@ -74,3 +74,4 @@ _ReSharper*/
 # Connection strings with secrets (if any)
 appsettings.Production.json
 appsettings.Staging.json
+k8s/db-secret.yaml
