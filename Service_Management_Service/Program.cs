@@ -16,14 +16,17 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddControllers();
 
-// ---------- CORS Configuration ----------
+// Configure CORS to allow requests from the frontend during development
+var frontendOrigin = "http://localhost:5173";
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowReact", policy =>
-        policy.WithOrigins("http://localhost:5173", "http://localhost:5174", "http://localhost:3000")
-              .AllowAnyMethod()
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins(frontendOrigin)
               .AllowAnyHeader()
-              .AllowCredentials());
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
 });
 
 // ---------- Swagger ----------
