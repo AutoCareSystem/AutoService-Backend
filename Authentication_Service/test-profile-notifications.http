@@ -1,0 +1,87 @@
+### Test Profile Update with Notifications
+### Make sure both services are running:
+### - Authentication Service: http://localhost:5093
+### - Notification Service: http://localhost:5295
+
+###############################################
+# STEP 1: Get All Customers (to get a userId)
+###############################################
+GET http://localhost:5093/api/Customers
+Content-Type: application/json
+
+###############################################
+# STEP 2: Get All Employees (to get a userId)
+###############################################
+GET http://localhost:5093/api/Employees
+Content-Type: application/json
+
+###############################################
+# STEP 3: Update a Customer Profile
+# Replace {customerId} with actual ID from Step 1
+###############################################
+PUT http://localhost:5093/api/Customers/{customerId}
+Content-Type: application/json
+
+{
+  "userName": "UpdatedCustomerName",
+  "phoneNumber": "1234567890",
+  "address": "123 New Street, New City"
+}
+
+###############################################
+# STEP 4: Update an Employee Profile
+# Replace {employeeId} with actual ID from Step 2
+###############################################
+PUT http://localhost:5093/api/Employees/{employeeId}
+Content-Type: application/json
+
+{
+  "userName": "UpdatedEmployeeName",
+  "phoneNumber": "0987654321"
+}
+
+###############################################
+# STEP 5: Check Customer Notifications
+# Replace {customerId} with the ID used in Step 3
+###############################################
+GET http://localhost:5295/api/Notifications/user/{customerId}
+Content-Type: application/json
+
+###############################################
+# STEP 6: Check Employee Notifications
+# Replace {employeeId} with the ID used in Step 4
+###############################################
+GET http://localhost:5295/api/Notifications/user/{employeeId}
+Content-Type: application/json
+
+###############################################
+# STEP 7: Get Notification Summary for Customer
+# Replace {customerId} with the ID used in Step 3
+###############################################
+GET http://localhost:5295/api/Notifications/user/{customerId}/summary
+Content-Type: application/json
+
+###############################################
+# STEP 8: Get Notification Summary for Employee
+# Replace {employeeId} with the ID used in Step 4
+###############################################
+GET http://localhost:5295/api/Notifications/user/{employeeId}/summary
+Content-Type: application/json
+
+###############################################
+# STEP 9: Mark Notifications as Read
+# Replace {userId} and {notificationId}
+###############################################
+PUT http://localhost:5295/api/Notifications/user/{userId}/mark-read
+Content-Type: application/json
+
+{
+  "notificationIDs": [1, 2, 3]
+}
+
+###############################################
+# STEP 10: Mark All Notifications as Read
+# Replace {userId}
+###############################################
+PUT http://localhost:5295/api/Notifications/user/{userId}/mark-all-read
+Content-Type: application/json

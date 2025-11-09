@@ -4,6 +4,7 @@ using AutoServiceBackend.Data;
 using backend_EAD.DTOs;
 using backend_EAD.Models;
 using Microsoft.AspNetCore.Identity;
+using backend_EAD.Services;
 
 namespace backend_EAD.Controllers
 {
@@ -13,11 +14,13 @@ namespace backend_EAD.Controllers
     {
         private readonly AppDbContext _db;
         private readonly UserManager<AppUser> _userManager;
+        private readonly NotificationHelper _notificationHelper;
 
-        public CustomersController(AppDbContext db, UserManager<AppUser> userManager)
+        public CustomersController(AppDbContext db, UserManager<AppUser> userManager, NotificationHelper notificationHelper)
         {
             _db = db;
             _userManager = userManager;
+            _notificationHelper = notificationHelper;
         }
 
         // =====================================================
