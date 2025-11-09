@@ -10,8 +10,6 @@ services:
       - ./Authentication_Service/.env
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
-    depends_on:
-      - postgres
 
   service-management-service:
     build:
@@ -24,32 +22,28 @@ services:
       - ./Service_Management_Service/.env
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
-    depends_on:
-      - postgres
 
-  # notification-service:
-  #     build:
-  #       context: ./Notification_Service
-  #       dockerfile: Dockerfile
-  #     container_name: notification-service
-  #     ports:
-  #       - "5003:8080"
-  #     env_file:
-  #       - ./Notification_Service/.env
-  #     depends_on:
-  #       - postgres
-
-  postgres:
-    image: postgres:15
-    container_name: postgres
+  notification-service:
+    build:
+      context: ./Notification_Service
+      dockerfile: Dockerfile
+    container_name: notification-service
     ports:
-      - "5432:5432"
+      - "5003:8080"
+    env_file:
+      - ./Notification_Service/.env
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password123
-      POSTGRES_DB: autoservice
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - ASPNETCORE_ENVIRONMENT=Production
 
-volumes:
-  postgres_data:
+  chatbot-service:
+    build:
+      context: ./Chatbot_Service
+      dockerfile: Dockerfile
+    container_name: chatbot-service
+    ports:
+      - "5004:8080"
+    env_file:
+      - ./Chatbot_Service/.env
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+

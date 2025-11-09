@@ -1,16 +1,20 @@
 using DotNetEnv;
 using Microsoft.EntityFrameworkCore;
-using Chatbot_Service.Data;
-using Chatbot_Service.Services;
+using Notification_Service.Data;
+using Notification_Service.Hubs;
+using Notification_Service.Services;
 
 Env.Load();
 
+// Configure PostgreSQL to handle DateTime properly
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Add environment variables to configuration
 builder.Configuration.AddEnvironmentVariables();
 
+// Get connection string
 var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL");
 
 if (string.IsNullOrEmpty(connectionString))
@@ -18,9 +22,7 @@ if (string.IsNullOrEmpty(connectionString))
     throw new InvalidOperationException("DATABASE_URL is missing. Set it in .env file.");
 }
 
-// =====================================================
-// FIX 1: ADDED THE MISSING AppDbContext SERVICE
-// =====================================================
+// Configure DbContext
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
     options.UseNpgsql(connectionString, npgsqlOptions =>
@@ -32,23 +34,14 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     });
 });
 
-// =====================================================
-// This is your correct CORS policy
-// =====================================================
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowMyReactApp", policy =>
-    {
-        policy.WithOrigins("http://localhost:5173") // Your React app's URL
-              .AllowAnyMethod()
-              .AllowAnyHeader()
-              .AllowCredentials();
-    });
-});
+// Register Services
+builder.Services.AddScoped<NotificationService>();
+builder.Services.AddHostedService<AppointmentMonitorService>();
 
-builder.Services.AddScoped<TimeSlotService>();
-builder.Services.AddScoped<GeminiService>();
+// Add SignalR
+builder.Services.AddSignalR();
 
+// Add Controllers
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -56,34 +49,40 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.WriteIndented = true;
     });
 
-// =====================================================
-// FIX 2: REMOVED THE DUPLICATE "AllowAll" CORS POLICY
-// =====================================================
-// (The duplicate policy that was here has been removed)
+// Configure CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader());
+});
 
+// Configure Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
     {
-        Title = "Chatbot Service API",
+        Title = "Notification Service API",
         Version = "v1",
-        Description = "AI-powered chatbot for checking available appointment time slots"
+        Description = "Real-time notification service with SignalR for appointment and service updates"
     });
 });
 
 var app = builder.Build();
 
+// Configure middleware
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Chatbot API V1");
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Notification API V1");
     });
 }
 
-// Database connection check and migration logic (unchanged)
+// Apply migrations and test database connection
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -96,23 +95,25 @@ using (var scope = app.Services.CreateScope())
         {
             Console.WriteLine("✅ Database connected successfully!");
 
-            // Test if Appointments table exists
-            var appointmentCount = await dbContext.Appointments.CountAsync();
-            Console.WriteLine($"📊 Total appointments in database: {appointmentCount}");
+            // Create database schema if it doesn't exist
+            Console.WriteLine("🔄 Ensuring database schema exists...");
+            await dbContext.Database.EnsureCreatedAsync();
+            Console.WriteLine("✅ Database schema ready!");
+
+            // Test if Notifications table exists
+            try
+            {
+                var notificationCount = await dbContext.Notifications.CountAsync();
+                Console.WriteLine($"📊 Total notifications in database: {notificationCount}");
+            }
+            catch
+            {
+                Console.WriteLine("⚠️ Notifications table check failed");
+            }
         }
         else
         {
             Console.WriteLine("⚠️ Database connection failed - CanConnectAsync returned false!");
-            Console.WriteLine("ℹ️ Attempting to migrate database...");
-            try
-            {
-                await dbContext.Database.MigrateAsync();
-                Console.WriteLine("✅ Database migration completed!");
-            }
-            catch (Exception migrateEx)
-            {
-                Console.WriteLine($"⚠️ Migration failed: {migrateEx.Message}");
-            }
         }
     }
     catch (Exception ex)
@@ -126,10 +127,14 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-// Ensure you are using the correct policy name here
-app.UseCors("AllowMyReactApp");
-
+app.UseCors("AllowAll");
 app.UseHttpsRedirection();
 app.MapControllers();
+
+// Map SignalR Hub
+app.MapHub<NotificationHub>("/notificationHub");
+
+Console.WriteLine("🚀 Notification Service with SignalR is starting...");
+Console.WriteLine("📡 SignalR Hub available at: /notificationHub");
 
 app.Run();

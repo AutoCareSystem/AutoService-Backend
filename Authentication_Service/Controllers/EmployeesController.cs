@@ -4,6 +4,7 @@ using AutoServiceBackend.Data;
 using backend_EAD.DTOs;
 using backend_EAD.Models;
 using Microsoft.AspNetCore.Identity;
+using backend_EAD.Services;
 
 namespace backend_EAD.Controllers
 {
@@ -13,11 +14,13 @@ namespace backend_EAD.Controllers
     {
         private readonly AppDbContext _db;
         private readonly UserManager<AppUser> _userManager;
+        private readonly NotificationHelper _notificationHelper;
 
-        public EmployeesController(AppDbContext db, UserManager<AppUser> userManager)
+        public EmployeesController(AppDbContext db, UserManager<AppUser> userManager, NotificationHelper notificationHelper)
         {
             _db = db;
             _userManager = userManager;
+            _notificationHelper = notificationHelper;
         }
 
         // ======================================================
@@ -88,16 +91,30 @@ namespace backend_EAD.Controllers
             if (employee == null)
                 return NotFound(new { message = $"Employee with ID '{id}' not found." });
 
-            // Update only allowed fields: UserName and PhoneNumber
-            if (!string.IsNullOrWhiteSpace(dto.UserName))
-                employee.User.UserName = dto.UserName.Trim();
+            var updatedFields = new List<string>();
 
-            if (!string.IsNullOrWhiteSpace(dto.PhoneNumber))
+            // Update only allowed fields: UserName and PhoneNumber
+            if (!string.IsNullOrWhiteSpace(dto.UserName) && dto.UserName.Trim() != employee.User.UserName)
+            {
+                employee.User.UserName = dto.UserName.Trim();
+                updatedFields.Add("UserName");
+            }
+
+            if (!string.IsNullOrWhiteSpace(dto.PhoneNumber) && dto.PhoneNumber.Trim() != employee.User.PhoneNumber)
+            {
                 employee.User.PhoneNumber = dto.PhoneNumber.Trim();
+                updatedFields.Add("PhoneNumber");
+            }
 
             await _db.SaveChangesAsync();
 
-            return Ok(new { message = "Employee profile updated successfully." });
+            // Send notification if any fields were updated
+            if (updatedFields.Any())
+            {
+                await _notificationHelper.SendProfileUpdateNotificationAsync(id, "Employee", updatedFields);
+            }
+
+            return Ok(new { message = "Employee profile updated successfully.", updatedFields });
         }
 
         // ======================================================

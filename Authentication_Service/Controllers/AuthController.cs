@@ -116,6 +116,20 @@ public class AuthController : ControllerBase
         }
     }
 
+
+    [HttpPost("reset-password/{id}")]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto dto, string id)
+    {
+        var user = await _userManager.FindByIdAsync(id);
+        if (user == null)
+            return Unauthorized();
+        user.UserName = user.Email;
+        var result = await _userManager.ChangePasswordAsync(user, dto.CurrentPassword, dto.NewPassword);
+        if (!result.Succeeded)
+            return BadRequest(result.Errors);
+        return Ok("Password reset successful");
+    }
+
     private string GenerateJwtToken(AppUser user)
     {
         var claims = new[]
@@ -142,3 +156,5 @@ public class AuthController : ControllerBase
 public record RegisterDto(string Email, string Password, string Role);
 public record LoginDto(string Email, string Password);
 public record RefreshRequest(string RefreshToken);
+
+public record ResetPasswordDto(string CurrentPassword, string NewPassword);

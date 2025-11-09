@@ -83,8 +83,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-// Enable CORS using the policy defined earlier
-app.UseCors("AllowFrontend");
+// Use CORS before other middleware
+app.UseCors("AllowReact");
 
 app.UseHttpsRedirection();
 

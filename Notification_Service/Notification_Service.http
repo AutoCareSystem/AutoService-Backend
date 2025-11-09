@@ -1,0 +1,74 @@
+### Notification Service API Tests
+
+@baseUrl = http://localhost:5295
+@userId = f003b7d9-eefe-4cb6-8f87-06ff62c54d8a
+
+### Health Check
+GET {{baseUrl}}/api/notifications/health
+
+### Get All Notifications for User
+GET {{baseUrl}}/api/notifications/user/{{userId}}
+
+### Get Unread Notifications Only
+GET {{baseUrl}}/api/notifications/user/{{userId}}?unreadOnly=true&limit=20
+
+### Get Notification Summary
+GET {{baseUrl}}/api/notifications/user/{{userId}}/summary
+
+### Create Manual Notification
+POST {{baseUrl}}/api/notifications
+Content-Type: application/json
+
+{
+  "userId": "{{userId}}",
+  "notificationType": "Test",
+  "title": "Test Notification",
+  "message": "This is a test notification from the API",
+  "entityType": "Appointment",
+  "entityID": 1,
+  "metadata": "{\"testKey\":\"testValue\"}"
+}
+
+### Mark Specific Notifications as Read
+PUT {{baseUrl}}/api/notifications/user/{{userId}}/mark-read
+Content-Type: application/json
+
+{
+  "notificationIDs": [1, 2, 3]
+}
+
+### Mark All Notifications as Read
+PUT {{baseUrl}}/api/notifications/user/{{userId}}/mark-all-read
+
+### Delete a Notification
+DELETE {{baseUrl}}/api/notifications/user/{{userId}}/1
+
+### Test with Different User
+@testUser = 550e8400-e29b-41d4-a716-446655440000
+
+### Create Appointment Notification
+POST {{baseUrl}}/api/notifications
+Content-Type: application/json
+
+{
+  "userId": "{{testUser}}",
+  "notificationType": "Appointment",
+  "title": "New Appointment Created",
+  "message": "Your Service appointment has been created for 2025-11-15 at 09:00 AM.",
+  "entityType": "Appointment",
+  "entityID": 5,
+  "metadata": "{\"status\":\"Pending\",\"type\":\"Service\"}"
+}
+
+### Create Service Notification
+POST {{baseUrl}}/api/notifications
+Content-Type: application/json
+
+{
+  "userId": "{{testUser}}",
+  "notificationType": "Service",
+  "title": "Service Completed",
+  "message": "Your vehicle service has been completed successfully!",
+  "entityType": "Service",
+  "entityID": 10
+}
