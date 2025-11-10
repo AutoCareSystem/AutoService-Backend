@@ -12,6 +12,7 @@
   <PackageReference Include="coverlet.collector" Version="3.2.0" />
   <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="9.0.10" />
   <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.10" />
+  <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="9.0.10" />
   </ItemGroup>
 
   <ItemGroup>

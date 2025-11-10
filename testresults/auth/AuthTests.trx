@@ -1,26 +1,26 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TestRun id="df58b1fc-4afe-4420-80a4-c40b300a1c70" name="pc@DESKTOP-NV4IS5N 2025-11-06 14:11:04" runUser="DESKTOP-NV4IS5N\pc" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
-  <Times creation="2025-11-06T14:11:04.9095921+05:30" queuing="2025-11-06T14:11:04.9095925+05:30" start="2025-11-06T14:11:00.8417050+05:30" finish="2025-11-06T14:11:04.9150777+05:30" />
-  <TestSettings name="default" id="06564fcd-366f-4547-90f5-dbe3d4bc3363">
-    <Deployment runDeploymentRoot="pc_DESKTOP-NV4IS5N_2025-11-06_14_11_04" />
+<TestRun id="5a32e592-3c9d-42fe-8230-4ee47ea5549d" name="pc@DESKTOP-NV4IS5N 2025-11-10 19:57:05" runUser="DESKTOP-NV4IS5N\pc" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2025-11-10T19:57:05.8990998+05:30" queuing="2025-11-10T19:57:05.8991002+05:30" start="2025-11-10T19:57:01.1398520+05:30" finish="2025-11-10T19:57:05.9031763+05:30" />
+  <TestSettings name="default" id="b7faa6f2-7777-4053-b925-1cbfa95ec95f">
+    <Deployment runDeploymentRoot="pc_DESKTOP-NV4IS5N_2025-11-10_19_57_05" />
   </TestSettings>
   <Results>
-    <UnitTestResult executionId="8c227e21-5db6-4071-b194-ff8c8fd43f4c" testId="70eef161-2d07-7ad7-6e3a-8be62091c77d" testName="Authentication_Service.Tests.ProfileControllerTests.UpdateEmployeeProfile_ReturnsUnauthorizedOrNotFound" computerName="DESKTOP-NV4IS5N" duration="00:00:00.0108663" startTime="2025-11-06T14:11:04.7002498+05:30" endTime="2025-11-06T14:11:04.7002499+05:30" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="8c227e21-5db6-4071-b194-ff8c8fd43f4c" />
-    <UnitTestResult executionId="36c9282a-1d6e-4f4f-ac64-e1b7360a51eb" testId="3fad343c-4015-6365-2310-9197daf1bf8f" testName="Authentication_Service.Tests.ProfileControllerTests.GetEmployeeProfile_ReturnsUnauthorizedOrNotFound" computerName="DESKTOP-NV4IS5N" duration="00:00:01.6395540" startTime="2025-11-06T14:11:04.6895979+05:30" endTime="2025-11-06T14:11:04.6896147+05:30" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="36c9282a-1d6e-4f4f-ac64-e1b7360a51eb" />
+    <UnitTestResult executionId="e29c51b5-6125-4203-b441-5ecdda0e1372" testId="3fad343c-4015-6365-2310-9197daf1bf8f" testName="Authentication_Service.Tests.ProfileControllerTests.GetEmployeeProfile_ReturnsUnauthorizedOrNotFound" computerName="DESKTOP-NV4IS5N" duration="00:00:00.6420217" startTime="2025-11-10T19:57:05.7939541+05:30" endTime="2025-11-10T19:57:05.7939697+05:30" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="e29c51b5-6125-4203-b441-5ecdda0e1372" />
+    <UnitTestResult executionId="940e7b21-eb8e-46a7-88aa-826b229791b3" testId="70eef161-2d07-7ad7-6e3a-8be62091c77d" testName="Authentication_Service.Tests.ProfileControllerTests.UpdateEmployeeProfile_ReturnsUnauthorizedOrNotFound" computerName="DESKTOP-NV4IS5N" duration="00:00:00.0089134" startTime="2025-11-10T19:57:05.8033852+05:30" endTime="2025-11-10T19:57:05.8033855+05:30" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="940e7b21-eb8e-46a7-88aa-826b229791b3" />
   </Results>
   <TestDefinitions>
     <UnitTest name="Authentication_Service.Tests.ProfileControllerTests.UpdateEmployeeProfile_ReturnsUnauthorizedOrNotFound" storage="c:\users\pc\documents\automobile\autoservice-backend\authentication_service.tests\bin\debug\net9.0\authentication_service.tests.dll" id="70eef161-2d07-7ad7-6e3a-8be62091c77d">
-      <Execution id="8c227e21-5db6-4071-b194-ff8c8fd43f4c" />
+      <Execution id="940e7b21-eb8e-46a7-88aa-826b229791b3" />
       <TestMethod codeBase="C:\Users\pc\Documents\Automobile\AutoService-Backend\Authentication_Service.Tests\bin\Debug\net9.0\Authentication_Service.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Authentication_Service.Tests.ProfileControllerTests" name="UpdateEmployeeProfile_ReturnsUnauthorizedOrNotFound" />
     </UnitTest>
     <UnitTest name="Authentication_Service.Tests.ProfileControllerTests.GetEmployeeProfile_ReturnsUnauthorizedOrNotFound" storage="c:\users\pc\documents\automobile\autoservice-backend\authentication_service.tests\bin\debug\net9.0\authentication_service.tests.dll" id="3fad343c-4015-6365-2310-9197daf1bf8f">
-      <Execution id="36c9282a-1d6e-4f4f-ac64-e1b7360a51eb" />
+      <Execution id="e29c51b5-6125-4203-b441-5ecdda0e1372" />
       <TestMethod codeBase="C:\Users\pc\Documents\Automobile\AutoService-Backend\Authentication_Service.Tests\bin\Debug\net9.0\Authentication_Service.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Authentication_Service.Tests.ProfileControllerTests" name="GetEmployeeProfile_ReturnsUnauthorizedOrNotFound" />
     </UnitTest>
   </TestDefinitions>
   <TestEntries>
-    <TestEntry testId="70eef161-2d07-7ad7-6e3a-8be62091c77d" executionId="8c227e21-5db6-4071-b194-ff8c8fd43f4c" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
-    <TestEntry testId="3fad343c-4015-6365-2310-9197daf1bf8f" executionId="36c9282a-1d6e-4f4f-ac64-e1b7360a51eb" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="3fad343c-4015-6365-2310-9197daf1bf8f" executionId="e29c51b5-6125-4203-b441-5ecdda0e1372" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="70eef161-2d07-7ad7-6e3a-8be62091c77d" executionId="940e7b21-eb8e-46a7-88aa-826b229791b3" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
   </TestEntries>
   <TestLists>
     <TestList name="Results Not in a List" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
@@ -30,22 +30,17 @@
     <Counters total="2" executed="2" passed="2" failed="0" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
     <Output>
       <StdOut>[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v2.4.5+1caef2f33e (64-bit .NET 9.0.9)&#xD;
-[xUnit.net 00:00:01.10]   Discovering: Authentication_Service.Tests&#xD;
-[xUnit.net 00:00:01.12]   Discovered:  Authentication_Service.Tests&#xD;
-[xUnit.net 00:00:01.13]   Starting:    Authentication_Service.Tests&#xD;
-JWT_KEY length: 32&#xD;
+[xUnit.net 00:00:02.99]   Discovering: Authentication_Service.Tests&#xD;
+[xUnit.net 00:00:03.01]   Discovered:  Authentication_Service.Tests&#xD;
+[xUnit.net 00:00:03.02]   Starting:    Authentication_Service.Tests&#xD;
+JWT_KEY length: &#xD;
+DATABASE_URL is missing - falling back to InMemory database for testing/development.&#xD;
+JWT key missing - using test default key.&#xD;
+JWT issuer missing - using TestIssuer.&#xD;
+JWT audience missing - using TestAudience.&#xD;
 ? Database connected successfully!&#xD;
-[xUnit.net 00:00:02.83]   Finished:    Authentication_Service.Tests&#xD;
+[xUnit.net 00:00:03.72]   Finished:    Authentication_Service.Tests&#xD;
 </StdOut>
     </Output>
-    <CollectorDataEntries>
-      <Collector agentName="DESKTOP-NV4IS5N" uri="datacollector://microsoft/CoverletCodeCoverage/1.0" collectorDisplayName="XPlat code coverage">
-        <UriAttachments>
-          <UriAttachment>
-            <A href="DESKTOP-NV4IS5N\coverage.cobertura.xml"></A>
-          </UriAttachment>
-        </UriAttachments>
-      </Collector>
-    </CollectorDataEntries>
   </ResultSummary>
 </TestRun>
